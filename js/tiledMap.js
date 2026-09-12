@@ -20,15 +20,14 @@ function loadTiledMap(mapData) {
     height: mapData.height,
     tileSize: mapData.tilewidth,
     terrenoGrid: tileLayerToGrid('terreno'),
+    // Layer separato per gli oggetti con margini trasparenti (alberi, ecc.):
+    // disegnato sopra il terreno invece di sovrascriverne le celle, così
+    // l'erba sotto resta visibile nei margini vuoti dello sprite.
+    decorazioniGrid: tileLayerToGrid('decorazioni'),
     collisioniGrid: tileLayerToGrid('collisioni'),
     erbaAltaGrid: tileLayerToGrid('erba_alta'),
     npcObjects: getLayer('npc')?.objects || [],
     ingressiObjects: getLayer('ingressi')?.objects || [],
-    spawnObjects: getLayer('spawn')?.objects || [],
-    // A differenza degli altri layer oggetto, "edifici" usa coordinate in
-    // pixel-mondo (scala già a 48px/tile) invece che in unità della griglia
-    // a 16px: sono stamp di dimensione libera (edifici, fontane, ecc.), non
-    // allineati alla griglia dei tile. Vedi requisiti sezione 4 e 13.
-    edificiObjects: getLayer('edifici')?.objects || []
+    spawnObjects: getLayer('spawn')?.objects || []
   }
 }

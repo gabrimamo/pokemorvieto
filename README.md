@@ -37,52 +37,57 @@ le entità, `battleScene.js` per il combattimento, `data/` per i contenuti).
   il padre "Kraken", oltre all'introduzione di Sere), con varianti "prima
   volta"/"ripetuto" che usano il flag di dialoghi visti salvato in
   `localStorage`.
-- **Mappa in formato Tiled**: `data/maps/orvietoPiazza.json`, una piazza con
-  bordo, zona erba alta e ingresso della Rupe su una griglia di tile
-  segnaposto (`img/tilesets/orvieto-placeholder.png`), più un layer
-  `edifici` che posiziona i veri asset del tileset "Medieval Town Tilemap"
-  (Duomo stilizzato, porta con torri, fontana, panchina, lampione, statua,
-  carro del mercato — ritagliati in `img/tilesets/orvieto/stamps/`). Il
-  motore (`js/tiledMap.js` + `TileLayerSprite`/`Sprite` in `classes.js`)
-  legge i layer per nome, quindi si può ridisegnare in Tiled senza toccare
-  il codice.
+- **Mappa in formato Tiled**: `data/maps/orvietoPiazza.json`, una piazza
+  disegnata con un vero tileset a griglia 16x16 in stile Pokémon classico
+  (`img/tileset-v2/tileset.png`): erba, laghetto, prato fiorito (zona
+  incontri), alberi, e tre edifici (un "Centro", un negozio, una casa)
+  composti incollando i blocchi di tile giusti nella griglia — non più
+  immagini "timbro" separate. Gli oggetti con margini trasparenti (alberi,
+  edifici dal tetto spiovente) stanno in un layer `decorazioni` disegnato
+  sopra il `terreno`, così l'erba sotto resta visibile. Il motore
+  (`js/tiledMap.js` + `TileLayerSprite` in `classes.js`) legge i layer per
+  nome, quindi si può ridisegnare in Tiled senza toccare il codice.
+- **NPC e sfondo di battaglia aggiornati**: villager/anziano usano ora due
+  personaggi del pacchetto overworld (`img/characters-pack/`, sprite a 4
+  direzioni — ne uso solo la riga "verso il basso", essendo NPC fermi sul
+  posto); lo sfondo di battaglia è uno sfondo dipinto vero
+  (`img/backgrounds/background1.png`) al posto del placeholder del
+  progetto base.
 - **Sprite provvisorio di Sere**: `img/sere/*.png`, capelli ricolorati in
   castano scuro a partire dal placeholder del progetto base
   (`scripts/recolorSereSprite.py`).
 
+## Asset disponibili ma non ancora usati
+
+Il pacchetto caricato include anche altro materiale, organizzato in
+`img/` ma non ancora agganciato al motore:
+
+- `img/attack-effects/` (7): animazioni per gli attacchi (es. spruzzi
+  d'acqua) — utilizzabili per arricchire `Monster.attack()` in `classes.js`
+- `img/ui/` (15): icone per barra HP (`baricon*`) e pulsanti di menu
+  (`options*`)
+- `img/characters-pack/` (10 interi): altri personaggi overworld completi
+  a 4 direzioni, oltre ai due già usati per gli NPC generici
+- `img/monsters-pack/` (16 mostri con forma base+evoluzione, animazioni
+  idle/attacco, icone menu): creature **originali**, non i Pokémon veri —
+  di proposito non usate in battaglia per mantenere il legame con la
+  storia (Meowth di Sere, Charizard il collega, ecc. — vedi requisiti,
+  sezione 6). Il gioco continua a usare gli sprite reali da PokéAPI.
+
 ## Cosa manca ancora (non bloccante per una prima versione)
 
-La mappa `data/maps/orvietoPiazza.json` mescola asset reali (edifici,
-fontana, arredi — dal pacchetto "Medieval Town Tilemap" acquistato
-dall'autore del progetto) con una griglia di terreno ancora segnaposto
-(tile a colore pieno per selciato/erba alta/vicolo, invece del vero
-tileset "ground" del pacchetto, che contiene solo pattern speciali per
-muri/pavimentazioni circolari, non un tile di terreno generico ripetibile).
-Per completarla:
+La mappa `data/maps/orvietoPiazza.json` è funzionale e usa asset veri, ma
+resta una piazza piccola e semplice: aggiungere più edifici/vicoli/aree
+(es. sotterranea per la Rupe) è solo questione di tempo di composizione in
+Tiled con lo stesso tileset, non di asset mancanti.
 
-1. Procurarsi (o ritagliare dal pacchetto già presente in
-   `img/tilesets/orvieto/`) dei tile di terreno base ripetibili
-   (selciato, erba, sterrato) — il pacchetto attuale copre edifici e
-   arredi ma non terreno generico.
-2. Aprire `data/maps/orvietoPiazza.json` in **Tiled** per ridisegnare i
-   layer `terreno`/`collisioni`/`erba_alta` col tileset vero, e per
-   aggiungere/spostare gli oggetti nei layer `npc`/`ingressi`/`edifici`.
-3. Ri-esportare come JSON: `js/tiledMap.js` legge i layer per nome, quindi
-   funziona senza modifiche finché i nomi restano questi. Gli oggetti nel
-   layer `edifici` usano coordinate in pixel-mondo (scala 48px/tile) e una
-   proprietà `image` che punta al file dello stamp da disegnare — vedi
-   `index.js` per come vengono letti.
-
-Altri edifici/arredi del pacchetto sono già ritagliati e pronti in
-`img/tilesets/orvieto/stamps/` (case in stile Tudor, negozio rosa, torre a
-cupola, bancarella di fiori, cartelli) ma non ancora posizionati sulla
-mappa: aggiungerli è solo questione di nuovi oggetti nel layer `edifici`.
-
-Allo stesso modo lo sprite di Sere è una ricolorazione provvisoria del
-placeholder base, non un vero artwork dedicato (idem per gli NPC umani della
-storia, Tina/il Merlo/ecc., che per ora non hanno ancora uno sprite proprio
-e quindi non compaiono ancora nel mondo, anche se i loro dialoghi sono già
-pronti in `data/dialogues/dialogues.js`).
+Lo sprite di Sere resta una ricolorazione provvisoria del placeholder
+base, non un vero artwork dedicato. I personaggi della storia (Tina, il
+Merlo, Zapdos, Gengar, il padre "Kraken") non hanno ancora uno sprite
+proprio e quindi non compaiono nel mondo, anche se i loro dialoghi sono già
+pronti in `data/dialogues/dialogues.js` — i 10 personaggi in
+`img/characters-pack/` sono candidati papabili se nessuno ha già un design
+più specifico in mente.
 
 Gli sprite dei Pokémon in battaglia sono caricati da un URL pubblico
 (sprite classici di PokéAPI) invece che da file locali: funziona bene per un
