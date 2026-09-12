@@ -255,15 +255,30 @@ const battle = {
 // No-op se la squadra è già stata popolata da un salvataggio.
 teamEnsureStarter()
 
+// Il riquadro del dialogo copre il D-pad/pulsante Azione su schermi piccoli
+// (entrambi ancorati in basso): nascondere i controlli touch mentre un
+// dialogo è aperto evita che restino a metà coperti, visivamente rotti.
+function showDialogueBox(text) {
+  const box = document.querySelector('#characterDialogueBox')
+  box.innerHTML = text
+  box.style.display = 'flex'
+  const controls = document.querySelector('#touchControls')
+  if (controls) controls.style.display = 'none'
+}
+
+function hideDialogueBox() {
+  document.querySelector('#characterDialogueBox').style.display = 'none'
+  const controls = document.querySelector('#touchControls')
+  if (controls) controls.style.display = 'flex'
+}
+
 // Monologo introduttivo di Sere, solo alla primissima partita (nessun
 // salvataggio esistente ancora).
 function playIntroIfNeeded() {
   if (savedOffset) return
   player.interactionAsset = { dialogue: dialogues.sereIntro, dialogueIndex: 0 }
   player.isInteracting = true
-  document.querySelector('#characterDialogueBox').innerHTML =
-    dialogues.sereIntro[0]
-  document.querySelector('#characterDialogueBox').style.display = 'flex'
+  showDialogueBox(dialogues.sereIntro[0])
 }
 playIntroIfNeeded()
 
@@ -515,16 +530,14 @@ function handleInteract() {
     // mondo controllato da checkForCharacterCollision) fa ripartire la
     // stessa conversazione da capo invece di restare chiusa.
     player.interactionAsset = null
-    document.querySelector('#characterDialogueBox').style.display = 'none'
+    hideDialogueBox()
     return
   }
 
   if (!player.interactionAsset) return
 
   // beginning the conversation
-  const firstMessage = player.interactionAsset.dialogue[0]
-  document.querySelector('#characterDialogueBox').innerHTML = firstMessage
-  document.querySelector('#characterDialogueBox').style.display = 'flex'
+  showDialogueBox(player.interactionAsset.dialogue[0])
   player.isInteracting = true
 }
 
@@ -563,6 +576,14 @@ window.addEventListener('keyup', (e) => {
       handleDirectionUp('d')
       break
   }
+})
+
+// Il riquadro del dialogo è "tappabile" per farlo avanzare: su mobile il
+// pulsante Azione finisce sotto al riquadro stesso quando un dialogo è
+// aperto, quindi serve un modo per proseguire toccando il testo (come già
+// succede per il dialogo di battaglia in battleScene.js).
+document.querySelector('#characterDialogueBox').addEventListener('click', () => {
+  handleInteract()
 })
 
 let clicked = false
