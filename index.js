@@ -4,15 +4,15 @@ const c = canvas.getContext('2d')
 canvas.width = 1024
 canvas.height = 576
 
-// Mappa "Piazza Duomo" (placeholder Tiled) — requisiti, sezione 2 e 4.
-// Sostituibile aprendo data/maps/orvietoPiazza.json in Tiled e cambiando il
-// tileset, senza toccare il motore (js/tiledMap.js).
+// Mappa "Piazza" — requisiti, sezione 2 e 4. Sostituibile aprendo
+// data/maps/orvietoPiazza.json in Tiled, senza toccare il motore
+// (js/tiledMap.js).
 const map = loadTiledMap(orvietoPiazzaMap)
 const CELL = Boundary.width // 48px a schermo per ogni tile della mappa
 const TILE_SCALE = CELL / map.tileSize
 
 const tilesetImage = new Image()
-tilesetImage.src = './img/tilesets/orvieto-placeholder.png'
+tilesetImage.src = './img/tileset-v2/tileset.png'
 
 // Il salvataggio va letto PRIMA di posizionare qualunque cosa nel mondo,
 // così l'offset iniziale è già quello giusto (niente da "correggere" dopo).
@@ -26,6 +26,16 @@ const offset = savedOffset || {
 const terrainLayer = new TileLayerSprite({
   position: { x: offset.x, y: offset.y },
   grid: map.terrenoGrid,
+  tileset: tilesetImage,
+  tileSize: map.tileSize,
+  cellSize: CELL
+})
+
+// Oggetti con margini trasparenti (alberi, ecc.): layer separato disegnato
+// sopra il terreno, così l'erba sotto ai margini vuoti resta visibile.
+const decorationLayer = new TileLayerSprite({
+  position: { x: offset.x, y: offset.y },
+  grid: map.decorazioniGrid,
   tileset: tilesetImage,
   tileSize: map.tileSize,
   cellSize: CELL
@@ -94,8 +104,8 @@ map.npcObjects.forEach((obj) => {
   const character = new Character({
     position,
     image: npcSpriteImages[spriteKey] || npcSpriteImages.villager,
-    frames: { max: 4, hold: 60 },
-    scale: 3,
+    frames: { max: 4, hold: 20 },
+    scale: 1.5,
     animate: true,
     dialogue: dialogueFor(dialogueKey)
   })
@@ -127,72 +137,6 @@ map.ingressiObjects.forEach((obj) => {
   character.dialogueKey = dialogueKey
   characters.push(character)
 })
-
-// Edifici/decorazioni dal vero tileset "Medieval Town Tilemap" (requisiti,
-// sezione 4 e 13): coordinate già in pixel-mondo, non serve TILE_SCALE.
-// Ogni riquadro di collisione è un'approssimazione della sola base
-// dell'edificio (il tetto, più alto, resta solo visivo, come nei giochi
-// Pokémon classici).
-function addBoundaryRect(x, y, width, height) {
-  for (let by = y; by < y + height; by += CELL) {
-    for (let bx = x; bx < x + width; bx += CELL) {
-      boundaries.push(new Boundary({ position: { x: bx, y: by } }))
-    }
-  }
-}
-
-const BUILDING_FOOTPRINTS = {
-  duomo: { fromBottom: 90 },
-  torretta: { fromBottom: 60 },
-  fontana: { fromBottom: 40 },
-  statua: { fromBottom: 40 },
-  carroMercato: { fromBottom: 40 }
-}
-
-const stampImageCache = {}
-function getStampImage(path) {
-  if (!stampImageCache[path]) {
-    const img = new Image()
-    img.src = path
-    stampImageCache[path] = img
-  }
-  return stampImageCache[path]
-}
-
-const buildingSprites = []
-map.edificiObjects.forEach((obj) => {
-  const imagePath = propertyValue(obj, 'image')
-  const position = { x: obj.x + offset.x, y: obj.y + offset.y }
-  const sprite = new Sprite({ position, image: getStampImage(imagePath) })
-  buildingSprites.push(sprite)
-
-  const footprint = BUILDING_FOOTPRINTS[obj.name]
-  if (footprint) {
-    addBoundaryRect(
-      position.x,
-      position.y + obj.height - footprint.fromBottom,
-      obj.width,
-      footprint.fromBottom
-    )
-  }
-})
-
-// La porta cittadina blocca solo le due torri, l'arco al centro resta
-// attraversabile.
-const gateObject = map.edificiObjects.find((o) => o.name === 'portaCittadina')
-if (gateObject) {
-  const gateX = gateObject.x + offset.x
-  const gateY = gateObject.y + offset.y
-  const towerWidth = 70
-  const towerHeight = 100
-  addBoundaryRect(gateX, gateY + gateObject.height - towerHeight, towerWidth, towerHeight)
-  addBoundaryRect(
-    gateX + gateObject.width - towerWidth,
-    gateY + gateObject.height - towerHeight,
-    towerWidth,
-    towerHeight
-  )
-}
 
 const playerDownImage = new Image()
 playerDownImage.src = './img/sere/sereDown.png'
@@ -233,16 +177,16 @@ const keys = {
 
 const movables = [
   terrainLayer,
+  decorationLayer,
   ...boundaries,
   ...battleZones,
-  ...buildingSprites,
   ...characters
 ]
 const renderables = [
   terrainLayer,
+  decorationLayer,
   ...boundaries,
   ...battleZones,
-  ...buildingSprites,
   ...characters,
   player
 ]
@@ -325,6 +269,10 @@ function animate() {
         audio.battle.play()
 
         battle.initiated = true
+        // I controlli touch sono ancorati in basso come il menu di
+        // battaglia: senza nasconderli si sovrappongono ai pulsanti
+        // d'attacco su schermi stretti.
+        document.querySelector('#touchControls').style.display = 'none'
         gsap.to('#overlappingDiv', {
           opacity: 1,
           repeat: 3,

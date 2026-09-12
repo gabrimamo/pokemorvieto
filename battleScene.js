@@ -1,11 +1,13 @@
 const battleBackgroundImage = new Image()
-battleBackgroundImage.src = './img/battleBackground.png'
+battleBackgroundImage.src = './img/backgrounds/background1.png'
 const battleBackground = new Sprite({
   position: {
     x: 0,
     y: 0
   },
-  image: battleBackgroundImage
+  image: battleBackgroundImage,
+  // Sfondo 640x360, canvas 1024x576: scala 1.6 lo riempie esattamente.
+  scale: 1.6
 })
 
 let draggle // Pokémon selvatico/avversario di turno
@@ -34,6 +36,7 @@ function endBattle() {
       cancelAnimationFrame(battleAnimationId)
       animate()
       document.querySelector('#userInterface').style.display = 'none'
+      document.querySelector('#touchControls').style.display = 'flex'
 
       gsap.to('#overlappingDiv', {
         opacity: 0
