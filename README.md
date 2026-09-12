@@ -34,17 +34,55 @@ le entità, `battleScene.js` per il combattimento, `data/` per i contenuti).
   offline in `data/pokemon.json` (vedi `scripts/fetchPokemonData.js`).
 - **Dialoghi separati dal motore**: `data/dialogues/dialogues.js`, un array
   di battute per personaggio (Tina/Krabby, il Merlo/Pidgey, Zapdos, Gengar,
-  il padre "Kraken", oltre all'introduzione di Sere).
+  il padre "Kraken", oltre all'introduzione di Sere), con varianti "prima
+  volta"/"ripetuto" che usano il flag di dialoghi visti salvato in
+  `localStorage`.
+- **Mappa in formato Tiled**: `data/maps/orvietoPiazza.json`, una piazza con
+  bordo, zona erba alta e ingresso della Rupe su una griglia di tile
+  segnaposto (`img/tilesets/orvieto-placeholder.png`), più un layer
+  `edifici` che posiziona i veri asset del tileset "Medieval Town Tilemap"
+  (Duomo stilizzato, porta con torri, fontana, panchina, lampione, statua,
+  carro del mercato — ritagliati in `img/tilesets/orvieto/stamps/`). Il
+  motore (`js/tiledMap.js` + `TileLayerSprite`/`Sprite` in `classes.js`)
+  legge i layer per nome, quindi si può ridisegnare in Tiled senza toccare
+  il codice.
+- **Sprite provvisorio di Sere**: `img/sere/*.png`, capelli ricolorati in
+  castano scuro a partire dal placeholder del progetto base
+  (`scripts/recolorSereSprite.py`).
 
 ## Cosa manca ancora (non bloccante per una prima versione)
 
-La mappa di gioco (collisioni, zone di erba alta, posizioni NPC) è ancora
-quella placeholder del progetto base ("Pellet Town"): la vera mappa di
-Orvieto va disegnata in **Tiled** con il tileset scelto (vedi requisiti,
-sezioni 4 e 13) e non è stata inclusa qui perché richiede il software Tiled
-e gli asset grafici, non ancora procurati. Allo stesso modo mancano gli
-sprite dedicati a Sere e agli NPC umani della storia (Tina, il Merlo, ecc.):
-per ora usano i placeholder del progetto base.
+La mappa `data/maps/orvietoPiazza.json` mescola asset reali (edifici,
+fontana, arredi — dal pacchetto "Medieval Town Tilemap" acquistato
+dall'autore del progetto) con una griglia di terreno ancora segnaposto
+(tile a colore pieno per selciato/erba alta/vicolo, invece del vero
+tileset "ground" del pacchetto, che contiene solo pattern speciali per
+muri/pavimentazioni circolari, non un tile di terreno generico ripetibile).
+Per completarla:
+
+1. Procurarsi (o ritagliare dal pacchetto già presente in
+   `img/tilesets/orvieto/`) dei tile di terreno base ripetibili
+   (selciato, erba, sterrato) — il pacchetto attuale copre edifici e
+   arredi ma non terreno generico.
+2. Aprire `data/maps/orvietoPiazza.json` in **Tiled** per ridisegnare i
+   layer `terreno`/`collisioni`/`erba_alta` col tileset vero, e per
+   aggiungere/spostare gli oggetti nei layer `npc`/`ingressi`/`edifici`.
+3. Ri-esportare come JSON: `js/tiledMap.js` legge i layer per nome, quindi
+   funziona senza modifiche finché i nomi restano questi. Gli oggetti nel
+   layer `edifici` usano coordinate in pixel-mondo (scala 48px/tile) e una
+   proprietà `image` che punta al file dello stamp da disegnare — vedi
+   `index.js` per come vengono letti.
+
+Altri edifici/arredi del pacchetto sono già ritagliati e pronti in
+`img/tilesets/orvieto/stamps/` (case in stile Tudor, negozio rosa, torre a
+cupola, bancarella di fiori, cartelli) ma non ancora posizionati sulla
+mappa: aggiungerli è solo questione di nuovi oggetti nel layer `edifici`.
+
+Allo stesso modo lo sprite di Sere è una ricolorazione provvisoria del
+placeholder base, non un vero artwork dedicato (idem per gli NPC umani della
+storia, Tina/il Merlo/ecc., che per ora non hanno ancora uno sprite proprio
+e quindi non compaiono ancora nel mondo, anche se i loro dialoghi sono già
+pronti in `data/dialogues/dialogues.js`).
 
 Gli sprite dei Pokémon in battaglia sono caricati da un URL pubblico
 (sprite classici di PokéAPI) invece che da file locali: funziona bene per un
@@ -70,6 +108,13 @@ dati aggiornati da PokéAPI:
 ```bash
 node scripts/fetchPokemonData.js            # aggiorna solo i dati
 node scripts/fetchPokemonData.js --sprites  # scarica anche gli sprite in img/pokemon/
+```
+
+Per rigenerare lo sprite provvisorio di Sere da `img/player*.png` (richiede
+`pip install Pillow`):
+
+```bash
+python3 scripts/recolorSereSprite.py
 ```
 
 ## Deployment

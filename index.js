@@ -4,134 +4,207 @@ const c = canvas.getContext('2d')
 canvas.width = 1024
 canvas.height = 576
 
-const collisionsMap = []
-for (let i = 0; i < collisions.length; i += 70) {
-  collisionsMap.push(collisions.slice(i, 70 + i))
+// Mappa "Piazza Duomo" (placeholder Tiled) — requisiti, sezione 2 e 4.
+// Sostituibile aprendo data/maps/orvietoPiazza.json in Tiled e cambiando il
+// tileset, senza toccare il motore (js/tiledMap.js).
+const map = loadTiledMap(orvietoPiazzaMap)
+const CELL = Boundary.width // 48px a schermo per ogni tile della mappa
+const TILE_SCALE = CELL / map.tileSize
+
+const tilesetImage = new Image()
+tilesetImage.src = './img/tilesets/orvieto-placeholder.png'
+
+// Il salvataggio va letto PRIMA di posizionare qualunque cosa nel mondo,
+// così l'offset iniziale è già quello giusto (niente da "correggere" dopo).
+const savedOffset = loadSavedState()
+const spawn = map.spawnObjects[0] || { x: 0, y: 0 }
+const offset = savedOffset || {
+  x: canvas.width / 2 - spawn.x * TILE_SCALE,
+  y: canvas.height / 2 - spawn.y * TILE_SCALE
 }
 
-const battleZonesMap = []
-for (let i = 0; i < battleZonesData.length; i += 70) {
-  battleZonesMap.push(battleZonesData.slice(i, 70 + i))
-}
-
-const charactersMap = []
-for (let i = 0; i < charactersMapData.length; i += 70) {
-  charactersMap.push(charactersMapData.slice(i, 70 + i))
-}
+const terrainLayer = new TileLayerSprite({
+  position: { x: offset.x, y: offset.y },
+  grid: map.terrenoGrid,
+  tileset: tilesetImage,
+  tileSize: map.tileSize,
+  cellSize: CELL
+})
 
 const boundaries = []
-const offset = {
-  x: -735,
-  y: -650
-}
-
-collisionsMap.forEach((row, i) => {
-  row.forEach((symbol, j) => {
-    if (symbol === 1025)
+map.collisioniGrid.forEach((row, i) => {
+  row.forEach((gid, j) => {
+    if (gid) {
       boundaries.push(
         new Boundary({
-          position: {
-            x: j * Boundary.width + offset.x,
-            y: i * Boundary.height + offset.y
-          }
+          position: { x: j * CELL + offset.x, y: i * CELL + offset.y }
         })
       )
+    }
   })
 })
 
 const battleZones = []
-
-battleZonesMap.forEach((row, i) => {
-  row.forEach((symbol, j) => {
-    if (symbol === 1025)
+map.erbaAltaGrid.forEach((row, i) => {
+  row.forEach((gid, j) => {
+    if (gid) {
       battleZones.push(
         new Boundary({
-          position: {
-            x: j * Boundary.width + offset.x,
-            y: i * Boundary.height + offset.y
-          }
+          position: { x: j * CELL + offset.x, y: i * CELL + offset.y }
         })
       )
+    }
   })
 })
 
-const characters = []
 const villagerImg = new Image()
 villagerImg.src = './img/villager/Idle.png'
 
 const oldManImg = new Image()
 oldManImg.src = './img/oldMan/Idle.png'
 
-charactersMap.forEach((row, i) => {
-  row.forEach((symbol, j) => {
-    // 1026 === villager (placeholder abitante di Orvieto)
-    if (symbol === 1026) {
-      characters.push(
-        new Character({
-          position: {
-            x: j * Boundary.width + offset.x,
-            y: i * Boundary.height + offset.y
-          },
-          image: villagerImg,
-          frames: {
-            max: 4,
-            hold: 60
-          },
-          scale: 3,
-          animate: true,
-          dialogue: dialogues.villagerOrvieto
-        })
-      )
-    }
-    // 1031 === oldMan (placeholder anziano di Orvieto)
-    else if (symbol === 1031) {
-      characters.push(
-        new Character({
-          position: {
-            x: j * Boundary.width + offset.x,
-            y: i * Boundary.height + offset.y
-          },
-          image: oldManImg,
-          frames: {
-            max: 4,
-            hold: 60
-          },
-          scale: 3,
-          dialogue: dialogues.oldManOrvieto
-        })
-      )
-    }
+const npcSpriteImages = { villager: villagerImg, oldMan: oldManImg }
+const entranceMarkerImage = new Image()
+entranceMarkerImage.src = './img/markers/entrance.png'
 
-    if (symbol !== 0) {
-      boundaries.push(
-        new Boundary({
-          position: {
-            x: j * Boundary.width + offset.x,
-            y: i * Boundary.height + offset.y
-          }
-        })
-      )
-    }
+function propertyValue(object, name) {
+  return object.properties?.find((p) => p.name === name)?.value
+}
+
+function dialogueFor(dialogueKey) {
+  const repeatKey = dialogueKey + 'Repeat'
+  if (hasSeenDialogue(dialogueKey) && dialogues[repeatKey]) {
+    return dialogues[repeatKey]
+  }
+  return dialogues[dialogueKey] || ['...']
+}
+
+const characters = []
+
+// NPC del mondo (requisiti, sezione 8): sprite placeholder finché non
+// arrivano gli asset dedicati a Orvieto (vedi requisiti, sezione 13).
+map.npcObjects.forEach((obj) => {
+  const dialogueKey = propertyValue(obj, 'dialogueKey')
+  const spriteKey = propertyValue(obj, 'sprite')
+  const position = {
+    x: obj.x * TILE_SCALE + offset.x,
+    y: obj.y * TILE_SCALE + offset.y
+  }
+
+  const character = new Character({
+    position,
+    image: npcSpriteImages[spriteKey] || npcSpriteImages.villager,
+    frames: { max: 4, hold: 60 },
+    scale: 3,
+    animate: true,
+    dialogue: dialogueFor(dialogueKey)
   })
+  character.dialogueKey = dialogueKey
+  characters.push(character)
+
+  // Come nel progetto base, un NPC blocca anche il passaggio.
+  boundaries.push(
+    new Boundary({ position: { x: position.x, y: position.y } })
+  )
 })
 
-const image = new Image()
-image.src = './img/Pellet Town.png'
+// Punti di interazione che non sono NPC (per ora solo l'ingresso della
+// Rupe): stesso sistema di dialogo, marcatore grafico diverso.
+map.ingressiObjects.forEach((obj) => {
+  const dialogueKey = propertyValue(obj, 'dialogueKey')
+  const position = {
+    x: obj.x * TILE_SCALE + offset.x,
+    y: obj.y * TILE_SCALE + offset.y
+  }
 
-const foregroundImage = new Image()
-foregroundImage.src = './img/foregroundObjects.png'
+  const character = new Character({
+    position,
+    image: entranceMarkerImage,
+    frames: { max: 1, hold: 1 },
+    scale: 3,
+    dialogue: dialogueFor(dialogueKey)
+  })
+  character.dialogueKey = dialogueKey
+  characters.push(character)
+})
+
+// Edifici/decorazioni dal vero tileset "Medieval Town Tilemap" (requisiti,
+// sezione 4 e 13): coordinate già in pixel-mondo, non serve TILE_SCALE.
+// Ogni riquadro di collisione è un'approssimazione della sola base
+// dell'edificio (il tetto, più alto, resta solo visivo, come nei giochi
+// Pokémon classici).
+function addBoundaryRect(x, y, width, height) {
+  for (let by = y; by < y + height; by += CELL) {
+    for (let bx = x; bx < x + width; bx += CELL) {
+      boundaries.push(new Boundary({ position: { x: bx, y: by } }))
+    }
+  }
+}
+
+const BUILDING_FOOTPRINTS = {
+  duomo: { fromBottom: 90 },
+  torretta: { fromBottom: 60 },
+  fontana: { fromBottom: 40 },
+  statua: { fromBottom: 40 },
+  carroMercato: { fromBottom: 40 }
+}
+
+const stampImageCache = {}
+function getStampImage(path) {
+  if (!stampImageCache[path]) {
+    const img = new Image()
+    img.src = path
+    stampImageCache[path] = img
+  }
+  return stampImageCache[path]
+}
+
+const buildingSprites = []
+map.edificiObjects.forEach((obj) => {
+  const imagePath = propertyValue(obj, 'image')
+  const position = { x: obj.x + offset.x, y: obj.y + offset.y }
+  const sprite = new Sprite({ position, image: getStampImage(imagePath) })
+  buildingSprites.push(sprite)
+
+  const footprint = BUILDING_FOOTPRINTS[obj.name]
+  if (footprint) {
+    addBoundaryRect(
+      position.x,
+      position.y + obj.height - footprint.fromBottom,
+      obj.width,
+      footprint.fromBottom
+    )
+  }
+})
+
+// La porta cittadina blocca solo le due torri, l'arco al centro resta
+// attraversabile.
+const gateObject = map.edificiObjects.find((o) => o.name === 'portaCittadina')
+if (gateObject) {
+  const gateX = gateObject.x + offset.x
+  const gateY = gateObject.y + offset.y
+  const towerWidth = 70
+  const towerHeight = 100
+  addBoundaryRect(gateX, gateY + gateObject.height - towerHeight, towerWidth, towerHeight)
+  addBoundaryRect(
+    gateX + gateObject.width - towerWidth,
+    gateY + gateObject.height - towerHeight,
+    towerWidth,
+    towerHeight
+  )
+}
 
 const playerDownImage = new Image()
-playerDownImage.src = './img/playerDown.png'
+playerDownImage.src = './img/sere/sereDown.png'
 
 const playerUpImage = new Image()
-playerUpImage.src = './img/playerUp.png'
+playerUpImage.src = './img/sere/sereUp.png'
 
 const playerLeftImage = new Image()
-playerLeftImage.src = './img/playerLeft.png'
+playerLeftImage.src = './img/sere/sereLeft.png'
 
 const playerRightImage = new Image()
-playerRightImage.src = './img/playerRight.png'
+playerRightImage.src = './img/sere/sereRight.png'
 
 const player = new Sprite({
   position: {
@@ -151,22 +224,6 @@ const player = new Sprite({
   }
 })
 
-const background = new Sprite({
-  position: {
-    x: offset.x,
-    y: offset.y
-  },
-  image: image
-})
-
-const foreground = new Sprite({
-  position: {
-    x: offset.x,
-    y: offset.y
-  },
-  image: foregroundImage
-})
-
 const keys = {
   w: { pressed: false },
   a: { pressed: false },
@@ -175,19 +232,19 @@ const keys = {
 }
 
 const movables = [
-  background,
+  terrainLayer,
   ...boundaries,
-  foreground,
   ...battleZones,
+  ...buildingSprites,
   ...characters
 ]
 const renderables = [
-  background,
+  terrainLayer,
   ...boundaries,
   ...battleZones,
+  ...buildingSprites,
   ...characters,
-  player,
-  foreground
+  player
 ]
 
 const battle = {
@@ -195,8 +252,20 @@ const battle = {
 }
 
 // Squadra iniziale: Meowth, compagno fedele di Sere (requisiti, sezione 5/6).
+// No-op se la squadra è già stata popolata da un salvataggio.
 teamEnsureStarter()
-if (hasSave()) loadGame()
+
+// Monologo introduttivo di Sere, solo alla primissima partita (nessun
+// salvataggio esistente ancora).
+function playIntroIfNeeded() {
+  if (savedOffset) return
+  player.interactionAsset = { dialogue: dialogues.sereIntro, dialogueIndex: 0 }
+  player.isInteracting = true
+  document.querySelector('#characterDialogueBox').innerHTML =
+    dialogues.sereIntro[0]
+  document.querySelector('#characterDialogueBox').style.display = 'flex'
+}
+playIntroIfNeeded()
 
 function animate() {
   const animationId = window.requestAnimationFrame(animate)
@@ -296,10 +365,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.y += 3
       })
+      offset.y += 3
+    }
   } else if (keys.a.pressed && lastKey === 'a') {
     player.animate = true
     player.image = player.sprites.left
@@ -329,10 +400,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.x += 3
       })
+      offset.x += 3
+    }
   } else if (keys.s.pressed && lastKey === 's') {
     player.animate = true
     player.image = player.sprites.down
@@ -362,10 +435,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.y -= 3
       })
+      offset.y -= 3
+    }
   } else if (keys.d.pressed && lastKey === 'd') {
     player.animate = true
     player.image = player.sprites.right
@@ -395,10 +470,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.x -= 3
       })
+      offset.x -= 3
+    }
   }
 }
 // animate()
@@ -428,8 +505,16 @@ function handleInteract() {
     }
 
     // finish conversation
-    player.isInteracting = false
+    if (player.interactionAsset.dialogueKey) {
+      markDialogueSeen(player.interactionAsset.dialogueKey)
+    }
     player.interactionAsset.dialogueIndex = 0
+    player.isInteracting = false
+    // Senza questo reset, premere di nuovo il tasto azione senza essersi
+    // mossi (es. dopo il monologo iniziale di Sere, che non è un NPC nel
+    // mondo controllato da checkForCharacterCollision) fa ripartire la
+    // stessa conversazione da capo invece di restare chiusa.
+    player.interactionAsset = null
     document.querySelector('#characterDialogueBox').style.display = 'none'
     return
   }
