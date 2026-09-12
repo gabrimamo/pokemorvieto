@@ -16,6 +16,9 @@ class Sprite {
       this.width = (this.image.width / this.frames.max) * scale
       this.height = this.image.height * scale
     }
+    this.image.onerror = () => {
+      console.warn('Sprite non caricato:', image.src)
+    }
     this.image.src = image.src
 
     this.animate = animate
@@ -27,6 +30,11 @@ class Sprite {
   }
 
   draw() {
+    // Salta il frame finché l'immagine non è pronta (es. sprite scaricati
+    // da rete, come quelli dei Pokémon in battaglia): senza questo controllo
+    // drawImage lancia un errore su un'immagine ancora "broken".
+    if (!this.image.complete || !this.image.naturalWidth) return
+
     c.save()
     c.translate(
       this.position.x + this.width / 2,
@@ -294,5 +302,44 @@ class Character extends Sprite {
 
     this.dialogue = dialogue
     this.dialogueIndex = 0
+  }
+}
+
+// Disegna un intero layer di tile di una mappa Tiled (griglia di gid, 0 =
+// vuoto) leggendo i ritagli dal tileset. Usata da js/tiledMap.js per il
+// livello "terreno"/"erba_alta" — vedi requisiti, sezione 2 e 4.
+class TileLayerSprite {
+  constructor({ position, grid, tileset, tileSize, cellSize }) {
+    this.position = position
+    this.grid = grid
+    this.tileset = tileset
+    this.tileSize = tileSize
+    this.cellSize = cellSize
+  }
+
+  draw() {
+    if (!this.tileset.complete || !this.tileset.naturalWidth) return
+    const columns = Math.round(this.tileset.naturalWidth / this.tileSize)
+
+    this.grid.forEach((row, rowIndex) => {
+      row.forEach((gid, colIndex) => {
+        if (!gid) return
+        const tileIndex = gid - 1
+        const sx = (tileIndex % columns) * this.tileSize
+        const sy = Math.floor(tileIndex / columns) * this.tileSize
+
+        c.drawImage(
+          this.tileset,
+          sx,
+          sy,
+          this.tileSize,
+          this.tileSize,
+          this.position.x + colIndex * this.cellSize,
+          this.position.y + rowIndex * this.cellSize,
+          this.cellSize,
+          this.cellSize
+        )
+      })
+    })
   }
 }

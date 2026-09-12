@@ -34,17 +34,40 @@ le entità, `battleScene.js` per il combattimento, `data/` per i contenuti).
   offline in `data/pokemon.json` (vedi `scripts/fetchPokemonData.js`).
 - **Dialoghi separati dal motore**: `data/dialogues/dialogues.js`, un array
   di battute per personaggio (Tina/Krabby, il Merlo/Pidgey, Zapdos, Gengar,
-  il padre "Kraken", oltre all'introduzione di Sere).
+  il padre "Kraken", oltre all'introduzione di Sere), con varianti "prima
+  volta"/"ripetuto" che usano il flag di dialoghi visti salvato in
+  `localStorage`.
+- **Mappa in formato Tiled**: `data/maps/orvietoPiazza.json`, una piazza
+  placeholder (bordo con "Duomo" stilizzato, zona erba alta, pozzo, ingresso
+  della Rupe) con un tileset segnaposto generato via script
+  (`img/tilesets/orvieto-placeholder.png`). Caricata da un motore generico
+  (`js/tiledMap.js` + `TileLayerSprite` in `classes.js`) che legge i layer
+  per nome — vedi sotto per come sostituirla con la mappa reale.
+- **Sprite provvisorio di Sere**: `img/sere/*.png`, capelli ricolorati in
+  castano scuro a partire dal placeholder del progetto base
+  (`scripts/recolorSereSprite.py`).
 
 ## Cosa manca ancora (non bloccante per una prima versione)
 
-La mappa di gioco (collisioni, zone di erba alta, posizioni NPC) è ancora
-quella placeholder del progetto base ("Pellet Town"): la vera mappa di
-Orvieto va disegnata in **Tiled** con il tileset scelto (vedi requisiti,
-sezioni 4 e 13) e non è stata inclusa qui perché richiede il software Tiled
-e gli asset grafici, non ancora procurati. Allo stesso modo mancano gli
-sprite dedicati a Sere e agli NPC umani della storia (Tina, il Merlo, ecc.):
-per ora usano i placeholder del progetto base.
+La mappa `data/maps/orvietoPiazza.json` è un **placeholder funzionale**, non
+la vera Orvieto: layout minimo (piazza + bordo + un paio di elementi) con
+tile a colore pieno invece del tileset reale. Per sostituirla con la mappa
+vera:
+
+1. Procurarsi il tileset "Medieval Town Tilemap" (Lukas311202, itch.io) o
+   equivalente (requisiti, sezione 4 e 13) — non scaricabile da qui, va
+   fatto manualmente e caricato nel progetto.
+2. Aprire `data/maps/orvietoPiazza.json` in **Tiled**, sostituire
+   l'immagine del tileset con quella vera, ridisegnare i layer `terreno`,
+   `collisioni`, `erba_alta` e gli oggetti nei layer `npc`/`ingressi`.
+3. Ri-esportare come JSON: `js/tiledMap.js` legge i layer per nome, quindi
+   funziona senza modifiche finché i nomi restano questi.
+
+Allo stesso modo lo sprite di Sere è una ricolorazione provvisoria del
+placeholder base, non un vero artwork dedicato (idem per gli NPC umani della
+storia, Tina/il Merlo/ecc., che per ora non hanno ancora uno sprite proprio
+e quindi non compaiono ancora nel mondo, anche se i loro dialoghi sono già
+pronti in `data/dialogues/dialogues.js`).
 
 Gli sprite dei Pokémon in battaglia sono caricati da un URL pubblico
 (sprite classici di PokéAPI) invece che da file locali: funziona bene per un
@@ -70,6 +93,13 @@ dati aggiornati da PokéAPI:
 ```bash
 node scripts/fetchPokemonData.js            # aggiorna solo i dati
 node scripts/fetchPokemonData.js --sprites  # scarica anche gli sprite in img/pokemon/
+```
+
+Per rigenerare lo sprite provvisorio di Sere da `img/player*.png` (richiede
+`pip install Pillow`):
+
+```bash
+python3 scripts/recolorSereSprite.py
 ```
 
 ## Deployment

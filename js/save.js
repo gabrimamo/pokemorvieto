@@ -40,20 +40,20 @@ function saveGame() {
   }
 }
 
-function hasSave() {
-  return localStorage.getItem(SAVE_KEY) !== null
-}
-
-function loadGame() {
+// Legge il salvataggio PRIMA di costruire la mappa: popola squadra e stato
+// della storia, e restituisce l'offset salvato (o null se non c'è nulla da
+// caricare) così index.js può usarlo subito come offset iniziale invece di
+// dover spostare tutti i movables dopo che sono già stati creati.
+function loadSavedState() {
   const raw = localStorage.getItem(SAVE_KEY)
-  if (!raw) return false
+  if (!raw) return null
 
   let data
   try {
     data = JSON.parse(raw)
   } catch (err) {
     console.error('Salvataggio corrotto', err)
-    return false
+    return null
   }
 
   if (data.team) teamLoadFromJSON(data.team)
@@ -62,18 +62,7 @@ function loadGame() {
     storyState.flags = data.story.flags || {}
   }
 
-  if (data.offset) {
-    const dx = data.offset.x - offset.x
-    const dy = data.offset.y - offset.y
-    movables.forEach((movable) => {
-      movable.position.x += dx
-      movable.position.y += dy
-    })
-    offset.x = data.offset.x
-    offset.y = data.offset.y
-  }
-
-  return true
+  return data.offset || null
 }
 
 function showSaveFeedback(message) {
