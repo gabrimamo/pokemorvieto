@@ -1,0 +1,11 @@
+{
+  "name": "pokemon-orvieto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gioco browser in stile Pokémon ambientato a Orvieto, fork di ManaJBin/pokemon.",
+  "scripts": {
+    "fetch-pokemon": "node scripts/fetchPokemonData.js",
+    "fetch-pokemon:sprites": "node scripts/fetchPokemonData.js --sprites"
+  },
+  "license": "MIT"
+}
