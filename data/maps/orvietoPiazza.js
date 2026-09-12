@@ -1,8 +1,5 @@
 // Generato a partire da data/maps/orvietoPiazza.json (mappa placeholder
 // in formato Tiled). Wrapper .js per caricarlo con un <script> tag.
-// Aprendo il .json in Tiled e sostituendo il tileset con quello reale
-// (vedi requisiti, sezione 4 e 13) si aggiorna la mappa senza toccare
-// il motore (js/tiledMap.js).
 const orvietoPiazzaMap = {
   "type": "map",
   "orientation": "orthogonal",
@@ -65,30 +62,10 @@ const orvietoPiazzaMap = {
         1,
         1,
         1,
-        2,
-        7,
-        7,
-        2,
         1,
         1,
         1,
         1,
-        1,
-        1,
-        1,
-        2,
-        2,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        2,
         1,
         1,
         1,
@@ -105,10 +82,10 @@ const orvietoPiazzaMap = {
         1,
         1,
         1,
-        2,
-        2,
-        2,
-        2,
+        1,
+        1,
+        1,
+        1,
         1,
         1,
         1,
@@ -191,7 +168,27 @@ const orvietoPiazzaMap = {
         1,
         1,
         1,
-        5,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        4,
         4,
         4,
         4,
@@ -378,30 +375,10 @@ const orvietoPiazzaMap = {
         0,
         0,
         0,
-        1,
-        1,
-        1,
-        1,
         0,
         0,
         0,
         0,
-        0,
-        0,
-        0,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        1,
-        1,
-        1,
         0,
         0,
         0,
@@ -418,10 +395,10 @@ const orvietoPiazzaMap = {
         0,
         0,
         0,
-        1,
-        1,
-        1,
-        1,
+        0,
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -504,12 +481,32 @@ const orvietoPiazzaMap = {
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
         1,
         0,
         0,
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
         1,
         0,
         0,
@@ -1038,6 +1035,22 @@ const orvietoPiazzaMap = {
               "value": "ingressoRupeTeaser"
             }
           ]
+        },
+        {
+          "id": 20,
+          "name": "vicoloEst",
+          "type": "entrance",
+          "x": 304,
+          "y": 112,
+          "width": 16,
+          "height": 16,
+          "properties": [
+            {
+              "name": "dialogueKey",
+              "type": "string",
+              "value": "vicoloEstTeaser"
+            }
+          ]
         }
       ]
     },
@@ -1057,6 +1070,159 @@ const orvietoPiazzaMap = {
           "width": 16,
           "height": 16,
           "properties": []
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "edifici",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        {
+          "id": 10,
+          "name": "duomo",
+          "type": "building",
+          "x": 340,
+          "y": 20,
+          "width": 320,
+          "height": 256,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/grand_hall.png"
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "torretta",
+          "type": "building",
+          "x": 250,
+          "y": 60,
+          "width": 48,
+          "height": 223,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/narrow_tower.png"
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "name": "portaCittadina",
+          "type": "building",
+          "x": 690,
+          "y": 290,
+          "width": 256,
+          "height": 208,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/gate_towers.png"
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "name": "pavimentoFontana",
+          "type": "decoration",
+          "x": 400,
+          "y": 420,
+          "width": 144,
+          "height": 146,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/circular_plaza.png"
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "name": "fontana",
+          "type": "decoration",
+          "x": 438,
+          "y": 445,
+          "width": 64,
+          "height": 67,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/fountain.png"
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "name": "panchina",
+          "type": "decoration",
+          "x": 355,
+          "y": 470,
+          "width": 45,
+          "height": 25,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/bench.png"
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "name": "lampione",
+          "type": "decoration",
+          "x": 535,
+          "y": 435,
+          "width": 42,
+          "height": 67,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/lamppost.png"
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "name": "statua",
+          "type": "decoration",
+          "x": 110,
+          "y": 540,
+          "width": 42,
+          "height": 101,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/statue.png"
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "name": "carroMercato",
+          "type": "decoration",
+          "x": 660,
+          "y": 555,
+          "width": 176,
+          "height": 92,
+          "properties": [
+            {
+              "name": "image",
+              "type": "string",
+              "value": "img/tilesets/orvieto/stamps/market_wagon.png"
+            }
+          ]
         }
       ]
     }

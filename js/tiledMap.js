@@ -24,6 +24,11 @@ function loadTiledMap(mapData) {
     erbaAltaGrid: tileLayerToGrid('erba_alta'),
     npcObjects: getLayer('npc')?.objects || [],
     ingressiObjects: getLayer('ingressi')?.objects || [],
-    spawnObjects: getLayer('spawn')?.objects || []
+    spawnObjects: getLayer('spawn')?.objects || [],
+    // A differenza degli altri layer oggetto, "edifici" usa coordinate in
+    // pixel-mondo (scala già a 48px/tile) invece che in unità della griglia
+    // a 16px: sono stamp di dimensione libera (edifici, fontane, ecc.), non
+    // allineati alla griglia dei tile. Vedi requisiti sezione 4 e 13.
+    edificiObjects: getLayer('edifici')?.objects || []
   }
 }

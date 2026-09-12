@@ -128,6 +128,72 @@ map.ingressiObjects.forEach((obj) => {
   characters.push(character)
 })
 
+// Edifici/decorazioni dal vero tileset "Medieval Town Tilemap" (requisiti,
+// sezione 4 e 13): coordinate già in pixel-mondo, non serve TILE_SCALE.
+// Ogni riquadro di collisione è un'approssimazione della sola base
+// dell'edificio (il tetto, più alto, resta solo visivo, come nei giochi
+// Pokémon classici).
+function addBoundaryRect(x, y, width, height) {
+  for (let by = y; by < y + height; by += CELL) {
+    for (let bx = x; bx < x + width; bx += CELL) {
+      boundaries.push(new Boundary({ position: { x: bx, y: by } }))
+    }
+  }
+}
+
+const BUILDING_FOOTPRINTS = {
+  duomo: { fromBottom: 90 },
+  torretta: { fromBottom: 60 },
+  fontana: { fromBottom: 40 },
+  statua: { fromBottom: 40 },
+  carroMercato: { fromBottom: 40 }
+}
+
+const stampImageCache = {}
+function getStampImage(path) {
+  if (!stampImageCache[path]) {
+    const img = new Image()
+    img.src = path
+    stampImageCache[path] = img
+  }
+  return stampImageCache[path]
+}
+
+const buildingSprites = []
+map.edificiObjects.forEach((obj) => {
+  const imagePath = propertyValue(obj, 'image')
+  const position = { x: obj.x + offset.x, y: obj.y + offset.y }
+  const sprite = new Sprite({ position, image: getStampImage(imagePath) })
+  buildingSprites.push(sprite)
+
+  const footprint = BUILDING_FOOTPRINTS[obj.name]
+  if (footprint) {
+    addBoundaryRect(
+      position.x,
+      position.y + obj.height - footprint.fromBottom,
+      obj.width,
+      footprint.fromBottom
+    )
+  }
+})
+
+// La porta cittadina blocca solo le due torri, l'arco al centro resta
+// attraversabile.
+const gateObject = map.edificiObjects.find((o) => o.name === 'portaCittadina')
+if (gateObject) {
+  const gateX = gateObject.x + offset.x
+  const gateY = gateObject.y + offset.y
+  const towerWidth = 70
+  const towerHeight = 100
+  addBoundaryRect(gateX, gateY + gateObject.height - towerHeight, towerWidth, towerHeight)
+  addBoundaryRect(
+    gateX + gateObject.width - towerWidth,
+    gateY + gateObject.height - towerHeight,
+    towerWidth,
+    towerHeight
+  )
+}
+
 const playerDownImage = new Image()
 playerDownImage.src = './img/sere/sereDown.png'
 
@@ -165,11 +231,18 @@ const keys = {
   d: { pressed: false }
 }
 
-const movables = [terrainLayer, ...boundaries, ...battleZones, ...characters]
+const movables = [
+  terrainLayer,
+  ...boundaries,
+  ...battleZones,
+  ...buildingSprites,
+  ...characters
+]
 const renderables = [
   terrainLayer,
   ...boundaries,
   ...battleZones,
+  ...buildingSprites,
   ...characters,
   player
 ]
@@ -292,10 +365,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.y += 3
       })
+      offset.y += 3
+    }
   } else if (keys.a.pressed && lastKey === 'a') {
     player.animate = true
     player.image = player.sprites.left
@@ -325,10 +400,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.x += 3
       })
+      offset.x += 3
+    }
   } else if (keys.s.pressed && lastKey === 's') {
     player.animate = true
     player.image = player.sprites.down
@@ -358,10 +435,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.y -= 3
       })
+      offset.y -= 3
+    }
   } else if (keys.d.pressed && lastKey === 'd') {
     player.animate = true
     player.image = player.sprites.right
@@ -391,10 +470,12 @@ function animate() {
       }
     }
 
-    if (moving)
+    if (moving) {
       movables.forEach((movable) => {
         movable.position.x -= 3
       })
+      offset.x -= 3
+    }
   }
 }
 // animate()

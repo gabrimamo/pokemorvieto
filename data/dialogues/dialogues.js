@@ -81,6 +81,16 @@ dialogues.oldManOrvietoRepeat = [
   "Le mie ossa continuano a farsi sentire. Ma sto bene, non preoccuparti."
 ]
 
+// Segnaposto per il vicolo che esce dalla piazza verso il resto del centro
+// storico: anche questa parte di mappa è un lavoro successivo.
+dialogues.vicoloEstTeaser = [
+  'Il vicolo continua oltre la piazza, verso il resto del centro storico.',
+  '(Il resto della mappa di Orvieto arriverà in una fase successiva dello sviluppo.)'
+]
+dialogues.vicoloEstTeaserRepeat = [
+  'Ancora il solito vicolo. Il resto della città aspetta ancora di essere disegnato.'
+]
+
 // Segnaposto per l'ingresso della Rupe: il dungeon sotterraneo vero e
 // proprio è un lavoro successivo (requisiti, sezione 4 e 14), per ora
 // l'ingresso è solo un punto interattivo con un messaggio di anticipazione.
