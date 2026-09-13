@@ -1321,6 +1321,90 @@
               "value": "oldManOrvieto"
             }
           ]
+        },
+        {
+          "id": 50,
+          "name": "zapdosNPC",
+          "type": "npc",
+          "x": 192,
+          "y": 48,
+          "width": 16,
+          "height": 16,
+          "properties": [
+            {
+              "name": "sprite",
+              "type": "string",
+              "value": "zapdos"
+            },
+            {
+              "name": "storyCharacter",
+              "type": "string",
+              "value": "zapdos"
+            }
+          ]
+        },
+        {
+          "id": 51,
+          "name": "tinaNPC",
+          "type": "npc",
+          "x": 240,
+          "y": 112,
+          "width": 16,
+          "height": 16,
+          "properties": [
+            {
+              "name": "sprite",
+              "type": "string",
+              "value": "tina"
+            },
+            {
+              "name": "storyCharacter",
+              "type": "string",
+              "value": "tina"
+            }
+          ]
+        },
+        {
+          "id": 52,
+          "name": "merloNPC",
+          "type": "npc",
+          "x": 288,
+          "y": 144,
+          "width": 16,
+          "height": 16,
+          "properties": [
+            {
+              "name": "sprite",
+              "type": "string",
+              "value": "merlo"
+            },
+            {
+              "name": "storyCharacter",
+              "type": "string",
+              "value": "merlo"
+            }
+          ]
+        },
+        {
+          "id": 53,
+          "name": "gengarNPC",
+          "type": "npc",
+          "x": 112,
+          "y": 192,
+          "width": 16,
+          "height": 16,
+          "properties": [
+            {
+              "name": "sprite",
+              "type": "string",
+              "value": "gengar"
+            },
+            {
+              "name": "storyCharacter",
+              "type": "string",
+              "value": "gengar"
+            }
+          ]
         }
       ]
     },
@@ -1331,22 +1415,6 @@
       "visible": true,
       "opacity": 1,
       "objects": [
-        {
-          "id": 3,
-          "name": "ingressoRupe",
-          "type": "entrance",
-          "x": 160,
-          "y": 224,
-          "width": 16,
-          "height": 16,
-          "properties": [
-            {
-              "name": "dialogueKey",
-              "type": "string",
-              "value": "ingressoRupeTeaser"
-            }
-          ]
-        },
         {
           "id": 20,
           "name": "vicoloEst",
@@ -1381,6 +1449,46 @@
           "width": 16,
           "height": 16,
           "properties": []
+        },
+        {
+          "id": 40,
+          "name": "fromRupeDungeon",
+          "type": "spawn",
+          "x": 160,
+          "y": 208,
+          "width": 16,
+          "height": 16,
+          "properties": []
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "eventi",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        {
+          "id": 30,
+          "name": "ingressoRupe",
+          "type": "transition",
+          "x": 160,
+          "y": 224,
+          "width": 16,
+          "height": 16,
+          "properties": [
+            {
+              "name": "targetMap",
+              "type": "string",
+              "value": "rupeDungeon"
+            },
+            {
+              "name": "targetSpawn",
+              "type": "string",
+              "value": "playerSpawn"
+            }
+          ]
         }
       ]
     }

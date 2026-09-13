@@ -28,6 +28,11 @@ function loadTiledMap(mapData) {
     erbaAltaGrid: tileLayerToGrid('erba_alta'),
     npcObjects: getLayer('npc')?.objects || [],
     ingressiObjects: getLayer('ingressi')?.objects || [],
-    spawnObjects: getLayer('spawn')?.objects || []
+    spawnObjects: getLayer('spawn')?.objects || [],
+    // Oggetti "di gioco" generici (leve, transizioni tra mappe, trigger di
+    // battaglie scriptate): distinti per tipo (object.type), non per nome
+    // di layer dedicato, così aggiungerne di nuovi non richiede modifiche
+    // al motore. Vedi requisiti sezione 4 (dungeon) e 9 (enigmi).
+    eventiObjects: getLayer('eventi')?.objects || []
   }
 }

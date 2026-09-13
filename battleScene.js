@@ -30,6 +30,7 @@ function persistActiveMemberHealth() {
 
 function endBattle() {
   persistActiveMemberHealth()
+  const wasGrimerScriptedBattle = inGrimerScriptedBattle
   gsap.to('#overlappingDiv', {
     opacity: 1,
     onComplete: () => {
@@ -44,6 +45,14 @@ function endBattle() {
 
       battle.initiated = false
       audio.Map.play()
+
+      // Scena scriptata di Grimer nel dungeon: dopo la battaglia (catturato
+      // o svenuto, non importa) rivela il progetto Chiarore (requisiti,
+      // sezione 4 e 14).
+      if (wasGrimerScriptedBattle) {
+        inGrimerScriptedBattle = false
+        onGrimerBattleResolved()
+      }
     }
   })
 }
@@ -135,10 +144,17 @@ function initBattle() {
     x: 280,
     y: 325
   })
-  draggle = pickWildMonster({
-    x: 800,
-    y: 100
-  })
+  // Una battaglia scriptata (es. la scena di Grimer nel dungeon) sovrascrive
+  // il Pokémon selvatico casuale con uno preimpostato da index.js.
+  if (pendingScriptedMonster) {
+    draggle = pendingScriptedMonster
+    pendingScriptedMonster = null
+  } else {
+    draggle = pickWildMonster({
+      x: 800,
+      y: 100
+    })
+  }
 
   document.querySelector('#playerName').innerHTML = emby.name
   document.querySelector('#enemyName').innerHTML = draggle.name

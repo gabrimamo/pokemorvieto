@@ -13,6 +13,56 @@ dialogues.sereIntro = [
   "Meowth mi guarda come se sapesse già che qualcosa non torna in questo progetto."
 ]
 
+// --- Trama "progetto Chiarore" (requisiti, sezione 5 e 14) ---
+// Sequenza a tappe (storyState.flags.sdengStage): Zapdos assegna
+// l'incarico, Tina nota anomalie nei dati, il Merlo sparisce dopo aver
+// visto qualcosa, Gengar spinge Sere verso la Rupe per la verità, la
+// scena con Grimer nel dungeon rivela il progetto, Zapdos chiude il
+// cerchio. Vedi index.js (storyDialogueFor) per la logica delle tappe.
+dialogues.zapdosPlot1 = [
+  'Sere, ho un incarico speciale per te. Il progetto "Chiarore".',
+  'Non dirlo in giro, ma nemmeno io ho visto tutti i dettagli.',
+  "Serve solo la tua parte di design. Il resto... non è affar tuo.",
+  'Fidati di me. O almeno, fidati che io mi fido di chi mi paga lo stipendio.'
+]
+
+dialogues.tinaPlot = [
+  'Il progetto Chiarore, giusto? Ho controllato i flussi dati che mi hai passato.',
+  'Ci sono permessi che non dovrebbero esistere per un semplice redesign, Sere.',
+  'Non sto dicendo che è sbagliato. Sto dicendo che è strano. E le cose strane io le controllo sempre.',
+  'Tienimi aggiornata. E stai attenta.'
+]
+
+dialogues.merloPlot = [
+  'Ehi Sere! Il progetto Chiarore, vero? Ne so qualcosa anch\'io, sai?',
+  'Diciamo che... ho visto un documento che non avrei dovuto vedere.',
+  'Non chiedermi altro, okay? Devo... devo proprio andare.',
+  '(Il Merlo sparisce dietro l\'angolo prima che tu possa dire altro.)'
+]
+
+dialogues.gengarPlot = [
+  'So cosa stai cercando di scoprire, Sere.',
+  'Chiarore non è un redesign. È un test. E i test hanno bisogno di cavie che non fanno domande.',
+  "Se vuoi delle risposte vere, non le troverai in ufficio. Sotto la Rupe c'è chi sa cose che a Sdeng vogliono restino sepolte.",
+  'Vai. Ma non da sola con la paura. Affrontala.'
+]
+
+dialogues.zapdosPlot2 = [
+  'Allora? Hai visto abbastanza, immagino.',
+  'Non ti chiederò di stare zitta. Non servirebbe comunque, conoscendoti.',
+  'La mia opinione? Chiarore andava fermato mesi fa. La mia autorità, però, finisce prima della loro.',
+  'Quello che farai con quello che sai... quello, Sere, è finalmente affar tuo.'
+]
+
+// Monologo di chiusura (temporaneo): anticipa il vero finale della storia,
+// l'incontro con Mew, non ancora implementato (requisiti, sezione 6 e 14).
+dialogues.sereClosure = [
+  'Meowth mi guarda come se sapesse che questa storia non è ancora finita.',
+  "Da qualche parte, dicono, hanno visto scintillare qualcosa sopra la Rupe.",
+  'Qualcosa che, dicono, non è di questo mondo.',
+  '(Il traguardo finale della storia — l\'incontro con Mew — arriverà in una fase successiva dello sviluppo.)'
+]
+
 // "Il Merlo" — collega/Pidgey, fa sempre promesse e sparisce.
 dialogues.merlo = [
   'Ehi Sere! Ti giuro, questa volta il file te lo mando entro stasera.',
@@ -91,17 +141,20 @@ dialogues.vicoloEstTeaserRepeat = [
   'Ancora il solito vicolo. Il resto della città aspetta ancora di essere disegnato.'
 ]
 
-// Segnaposto per l'ingresso della Rupe: il dungeon sotterraneo vero e
-// proprio è un lavoro successivo (requisiti, sezione 4 e 14), per ora
-// l'ingresso è solo un punto interattivo con un messaggio di anticipazione.
-dialogues.ingressoRupeTeaser = [
-  "L'ingresso alla Rupe è buio, umido, e sa di tufo bagnato.",
-  'Da qui in poi le gallerie sotterranee non sono ancora esplorabili.',
-  '...',
-  '(Il dungeon con le grotte di tufo arriverà in una fase successiva dello sviluppo.)'
+// --- Dungeon della Rupe (requisiti, sezione 4 e 9) ---
+dialogues.rupeLeva = [
+  'Una leva arrugginita, incastrata nella roccia.',
+  '(La tiri. Un meccanismo scatta da qualche parte oltre il cancello.)'
 ]
-dialogues.ingressoRupeTeaserRepeat = [
-  'Ancora buio, laggiù. Non è ancora il momento di scendere.'
+dialogues.rupeLevaRepeat = [
+  'Il meccanismo della leva è già scattato.'
+]
+
+// Dopo la scena di Grimer nel dungeon: rivelazione sul progetto Chiarore.
+dialogues.dungeonPostGrimer = [
+  'Quindi è questo il progetto Chiarore. Non design. Non un cliente. Cavie.',
+  'Grimer non è un mostro. È una vittima, come tutte le altre.',
+  'Ok, Sdeng. Ora tocca a me decidere cosa farne, di quello che ho visto.'
 ]
 
 // Il padre di Sere — "il Kraken", nella cantina/magione fuori città.
