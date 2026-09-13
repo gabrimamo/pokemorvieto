@@ -4,6 +4,30 @@ const c = canvas.getContext('2d')
 canvas.width = 1024
 canvas.height = 576
 
+// L'overlay HTML della battaglia (#userInterface: barre HP, dialogo, menu
+// attacchi) è scritto in coordinate fisse 1024x576, le stesse del canvas.
+// Ma il canvas usa object-fit:contain: la sua BOX CSS riempie lo schermo,
+// mentre il bitmap disegnato viene "lettera-box-ato" a un'area più piccola
+// su schermi con proporzioni diverse dal 16:9 (tipicamente i telefoni in
+// verticale). Senza questo aggiustamento l'overlay resta ancorato alla box
+// intera invece che all'area realmente disegnata, apparendo scollegato
+// dalla scena di battaglia su mobile.
+function syncBattleOverlayTransform() {
+  const container = document.querySelector('#gameContainer')
+  const overlay = document.querySelector('#userInterface')
+  if (!container || !overlay) return
+  const scale = Math.min(
+    container.clientWidth / canvas.width,
+    container.clientHeight / canvas.height
+  )
+  const offsetX = (container.clientWidth - canvas.width * scale) / 2
+  const offsetY = (container.clientHeight - canvas.height * scale) / 2
+  overlay.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`
+}
+syncBattleOverlayTransform()
+window.addEventListener('resize', syncBattleOverlayTransform)
+window.addEventListener('orientationchange', syncBattleOverlayTransform)
+
 const CELL = Boundary.width // 48px a schermo per ogni tile della mappa
 
 // Registro delle mappe (requisiti, sezione 2 e 4): ogni mappa è un file
@@ -17,8 +41,16 @@ const MAPS = {
   rupeDungeon: {
     data: rupeDungeonMap,
     tilesetSrc: './img/tileset-dungeon-placeholder/tileset.png',
-    // Cella (riga, colonna) del cancello che la leva del dungeon apre.
-    gateCell: { row: 6, col: 5 }
+    // Celle (riga, colonna) del cancello che la leva del dungeon apre: tre
+    // caselle affiancate, non una sola. La hitbox del giocatore riposa
+    // esattamente a metà tile (player.x = canvas.width/2 - 24), quindi un
+    // varco di una sola casella allineato alla griglia la blocca sempre
+    // contro il muro adiacente, a prescindere da quale dei due lati.
+    gateCells: [
+      { row: 6, col: 4 },
+      { row: 6, col: 5 },
+      { row: 6, col: 6 }
+    ]
   }
 }
 
@@ -272,7 +304,20 @@ function buildWorld(mapId, spawnName, forcedOffset) {
     }
   })
 
-  movables = [terrainLayer, decorationLayer, ...boundaries, ...battleZones, ...characters]
+  // transitionZones/grimerZones vanno inclusi in movables come tutto il
+  // resto del mondo (boundaries, battleZones, characters): altrimenti
+  // restano ancorati alla posizione calcolata al momento di buildWorld()
+  // e si scollegano dal resto della mappa al primo passo del giocatore,
+  // diventando di fatto irraggiungibili camminando normalmente.
+  movables = [
+    terrainLayer,
+    decorationLayer,
+    ...boundaries,
+    ...battleZones,
+    ...characters,
+    ...transitionZones,
+    ...grimerZones
+  ]
   renderables = [
     terrainLayer,
     decorationLayer,
@@ -285,23 +330,22 @@ function buildWorld(mapId, spawnName, forcedOffset) {
   currentMapId = mapId
 }
 
-// Apre il cancello del dungeon: cambia il tile a "pavimento" e rimuove la
-// collisione corrispondente (requisiti, sezione 9 — enigma in stile Zelda).
+// Apre il cancello del dungeon: cambia i tile a "pavimento" e rimuove le
+// collisioni corrispondenti (requisiti, sezione 9 — enigma in stile Zelda).
 function openGate(mapId) {
-  const gateCell = MAPS[mapId].gateCell
-  if (!gateCell) return
-  terrainLayer.grid[gateCell.row][gateCell.col] = 1 // gid 1 = pavimento
-  const gateX = gateCell.col * CELL + offset.x
-  const gateY = gateCell.row * CELL + offset.y
-  boundaries = boundaries.filter(
-    (b) => !(b.position.x === gateX && b.position.y === gateY)
-  )
-  movables = movables.filter(
-    (m) => !(m instanceof Boundary && m.position.x === gateX && m.position.y === gateY)
-  )
-  renderables = renderables.filter(
-    (r) => !(r instanceof Boundary && r.position.x === gateX && r.position.y === gateY)
-  )
+  const gateCells = MAPS[mapId].gateCells
+  if (!gateCells) return
+  const gatePositions = gateCells.map((cell) => {
+    terrainLayer.grid[cell.row][cell.col] = 1 // gid 1 = pavimento
+    return { x: cell.col * CELL + offset.x, y: cell.row * CELL + offset.y }
+  })
+  const isGateBoundary = (b) =>
+    b instanceof Boundary &&
+    gatePositions.some((g) => b.position.x === g.x && b.position.y === g.y)
+
+  boundaries = boundaries.filter((b) => !isGateBoundary(b))
+  movables = movables.filter((m) => !isGateBoundary(m))
+  renderables = renderables.filter((r) => !isGateBoundary(r))
 }
 
 function switchMap(mapId, spawnName) {
@@ -474,8 +518,12 @@ function animate() {
   // Transizioni tra mappe (requisiti, sezione 4): sovrapporsi a una zona
   // basta, non serve premere il tasto azione (come gli ingressi di grotte
   // nei giochi Pokémon classici).
+  if (window.__debugTransitions) {
+    console.log('DEBUG tick, transitionZones.length=', transitionZones.length, 'player.pos=', JSON.stringify(player.position), 'currentMapId=', currentMapId)
+  }
   for (const zone of transitionZones) {
     if (rectangularCollision({ rectangle1: player, rectangle2: zone })) {
+      if (window.__debugTransitions) console.log('DEBUG MATCH switching to', zone.targetMap)
       switchMap(zone.targetMap, zone.targetSpawn)
       return
     }

@@ -56,8 +56,55 @@
       font-size: 16px;
     }
 
-    button:hover {
+    button:not(.pixelButton):hover {
       background-color: #ddd;
+    }
+
+    /* --- Bottoni in stile pixel art (pacchetto "Freebuttons") ---
+       I fogli sorgente hanno 3 righe che sono solo varianti di tonalità
+       (stessa forma, colore diverso), non stati normale/premuto: uso un
+       solo frame per forma e simulo la pressione via :active. */
+    .pixelButton {
+      background: transparent no-repeat center / 100% 100%;
+      image-rendering: pixelated;
+      color: #3a2318;
+      transition: transform 0.05s ease, filter 0.05s ease;
+    }
+
+    .pixelButton:hover {
+      filter: brightness(1.08);
+    }
+
+    .pixelButton:active {
+      transform: scale(0.94);
+      filter: brightness(0.9);
+    }
+
+    .pixelButton:disabled {
+      filter: grayscale(0.6) brightness(0.85);
+      cursor: not-allowed;
+    }
+
+    /* I bottoni larghi (testo) usano un border-image a 9 riquadri invece
+       di uno sfondo semplicemente stirato: l'immagine sorgente è stretta
+       e bassa (14x10px), quindi uno stretch uniforme su un bottone largo
+       deformerebbe gli angoli arrotondati fino a "mangiarsi" il testo. */
+    .pixelButton--long {
+      background: none;
+      border-style: solid;
+      border-width: 10px;
+      border-image-source: url('img/ui/freebuttons/button-long.png');
+      border-image-slice: 3 fill;
+      border-image-width: 10px;
+      border-image-repeat: stretch;
+    }
+
+    .pixelButton--square {
+      background-image: url('img/ui/freebuttons/button-square.png');
+    }
+
+    .pixelButton--round {
+      background-image: url('img/ui/freebuttons/button-round.png');
     }
 
     /* --- D-pad e pulsante azione (controlli touch, sezione 10) --- */
@@ -85,9 +132,6 @@
       position: absolute;
       width: 50px;
       height: 50px;
-      background-color: rgba(255, 255, 255, 0.5);
-      border: 2px solid black;
-      border-radius: 8px;
       font-size: 20px;
     }
 
@@ -100,9 +144,6 @@
       pointer-events: auto;
       width: 70px;
       height: 70px;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.5);
-      border: 2px solid black;
       font-size: 12px;
       align-self: flex-end;
     }
@@ -118,10 +159,7 @@
     }
 
     #hud button {
-      background-color: rgba(255, 255, 255, 0.85);
-      border: 2px solid black;
-      border-radius: 6px;
-      padding: 8px;
+      padding: 2px 4px;
       font-size: 10px;
     }
 
@@ -170,25 +208,48 @@
 
     .teamMember {
       font-size: 10px;
-      padding: 10px;
+      padding: 4px 10px;
       text-align: left;
-      border: 2px solid black;
-      background-color: #eee;
+      color: #3a2318;
+      border-style: solid;
+      border-width: 12px;
+      border-image-source: url('img/ui/freebuttons/button-long.png');
+      border-image-slice: 3 fill;
+      border-image-width: 12px;
+      border-image-repeat: stretch;
     }
 
     .teamMember.active {
-      background-color: #9ef29e;
+      outline: 3px solid #2e7d32;
+      outline-offset: 2px;
     }
 
     .teamMember:disabled {
-      opacity: 0.5;
+      filter: grayscale(0.7) brightness(0.85);
       cursor: not-allowed;
     }
 
     #closeTeamMenu {
       margin-top: 12px;
-      padding: 8px 12px;
+      padding: 4px 8px;
       font-size: 10px;
+    }
+
+    /* L'overlay HTML della battaglia (barre HP, dialogo, menu attacchi) è
+       scritto in coordinate fisse 1024x576 (lo spazio del canvas). Il
+       canvas usa object-fit:contain e si "lettera-box-a" su schermi con
+       proporzioni diverse dal 16:9 (es. i telefoni in verticale): la sua
+       area disegnata è più piccola della sua box CSS a piena pagina.
+       Senza sincronizzare l'overlay con quell'area effettiva, su mobile
+       finisce scollegato dalla scena di battaglia (vedi
+       syncBattleOverlayTransform() in index.js). */
+    #userInterface {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1024px;
+      height: 576px;
+      transform-origin: top left;
     }
 
     @media (min-width: 700px) {
@@ -222,26 +283,32 @@
   <canvas></canvas>
 
   <div id="hud">
-    <button id="teamButton">Squadra</button>
-    <button id="saveButton">Salva</button>
+    <button id="teamButton" class="pixelButton pixelButton--long">Squadra</button>
+    <button id="saveButton" class="pixelButton pixelButton--long">Salva</button>
   </div>
   <div id="saveFeedback"></div>
 
   <div id="touchControls">
     <div id="dpad">
-      <button id="dpadUp" class="dpadButton">▲</button>
-      <button id="dpadLeft" class="dpadButton">◀</button>
-      <button id="dpadRight" class="dpadButton">▶</button>
-      <button id="dpadDown" class="dpadButton">▼</button>
+      <button id="dpadUp" class="dpadButton pixelButton pixelButton--square">▲</button>
+      <button id="dpadLeft" class="dpadButton pixelButton pixelButton--square">◀</button>
+      <button id="dpadRight" class="dpadButton pixelButton pixelButton--square">▶</button>
+      <button id="dpadDown" class="dpadButton pixelButton pixelButton--square">▼</button>
     </div>
-    <button id="actionButton">Azione</button>
+    <button id="actionButton" class="pixelButton pixelButton--round">Azione</button>
   </div>
 
   <div id="teamMenu">
     <div id="teamMenuBox">
       <h1 style="font-size: 14px">La tua squadra</h1>
       <div id="teamList"></div>
-      <button id="closeTeamMenu">Chiudi</button>
+      <button id="closeTeamMenu" class="pixelButton pixelButton--long">
+        <img
+          src="img/ui/freebuttons/icon-close.png"
+          alt=""
+          style="width: 14px; height: 14px; vertical-align: middle; image-rendering: pixelated; margin-right: 6px;"
+        />Chiudi
+      </button>
     </div>
   </div>
 
@@ -359,6 +426,8 @@
           width: 66.66%;
           display: grid;
           grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          padding: 10px;
         "
       ></div>
       <div

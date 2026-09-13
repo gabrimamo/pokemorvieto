@@ -168,15 +168,18 @@ function initBattle() {
     const button = document.createElement('button')
     button.innerHTML = attack.name
     button.dataset.role = 'attack'
+    button.className = 'pixelButton pixelButton--long'
     document.querySelector('#attacksBox').append(button)
   })
 
   const captureButton = document.createElement('button')
   captureButton.innerHTML = 'Poké Ball'
+  captureButton.className = 'pixelButton pixelButton--long'
   captureButton.addEventListener('click', tryCapture)
   document.querySelector('#attacksBox').append(captureButton)
 
   const switchButton = document.createElement('button')
+  switchButton.className = 'pixelButton pixelButton--long'
   switchButton.innerHTML = 'Squadra'
   switchButton.addEventListener('click', () => {
     const menu = document.querySelector('#teamMenu')

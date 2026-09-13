@@ -75,6 +75,35 @@ le entità, `battleScene.js` per il combattimento, `data/` per i contenuti).
   - `pendingScriptedMonster` in `battleScene.js`: sovrascrive l'incontro
     casuale con un Pokémon preimpostato, per le battaglie di trama.
 
+  Testato camminando davvero nel mondo (non solo per teletrasporto) dopo
+  aver trovato e corretto due bug che rendevano il dungeon di fatto
+  irraggiungibile: `transitionZones`/`grimerZones` non erano incluse in
+  `movables`, quindi restavano ancorate alla posizione calcolata al
+  momento di `buildWorld()` invece di spostarsi con il resto della mappa
+  al primo passo del giocatore; e i varchi (ingresso della Rupe, cancello
+  del dungeon) erano larghi una sola casella, troppo stretti per la
+  hitbox del giocatore che riposa esattamente a metà tile
+  (`player.x = canvas.width/2 - 24`) — ora larghi 2-3 caselle.
+- **Bottoni in stile pixel art** (pacchetto "Freebuttons",
+  `img/ui/freebuttons-source/`): tutti i pulsanti dell'interfaccia (D-pad,
+  Azione, HUD Squadra/Salva, menu squadra, attacchi/Poké Ball/Squadra in
+  battaglia) usano ora gli sprite del pacchetto invece del semplice
+  `background-color` del progetto base. I bottoni larghi (testo) usano un
+  `border-image` a 9 riquadri anziché uno sfondo stirato: l'artwork
+  sorgente è stretto e basso, quindi uno stretch uniforme su un bottone
+  largo ne deformava gli angoli fino a "mangiarsi" il testo — vedi classe
+  `.pixelButton--long` in `index.html`.
+- **Fix overlay di battaglia su schermi non 16:9** (mobile): il canvas usa
+  `object-fit: contain` e si "lettera-box-a" su schermi con proporzioni
+  diverse da quella del canvas (1024x576), ma l'overlay HTML della
+  battaglia (barre HP, dialogo, menu attacchi) è scritto in coordinate
+  fisse in quello stesso spazio. Senza sincronizzarlo con l'area
+  effettivamente disegnata dal canvas, su telefono l'interfaccia di
+  battaglia appariva completamente scollegata dalla scena (barre HP a
+  metà schermo, lontane dai Pokémon). Risolto con
+  `syncBattleOverlayTransform()` in `index.js`, che applica all'overlay lo
+  stesso scale/offset del canvas, ricalcolato a ogni resize/rotazione.
+
 ## Asset disponibili ma non ancora usati
 
 Il pacchetto caricato include anche altro materiale, organizzato in
