@@ -4,76 +4,53 @@ const c = canvas.getContext('2d')
 canvas.width = 1024
 canvas.height = 576
 
-// Mappa "Piazza" — requisiti, sezione 2 e 4. Sostituibile aprendo
-// data/maps/orvietoPiazza.json in Tiled, senza toccare il motore
-// (js/tiledMap.js).
-const map = loadTiledMap(orvietoPiazzaMap)
 const CELL = Boundary.width // 48px a schermo per ogni tile della mappa
-const TILE_SCALE = CELL / map.tileSize
 
-const tilesetImage = new Image()
-tilesetImage.src = './img/tileset-v2/tileset.png'
-
-// Il salvataggio va letto PRIMA di posizionare qualunque cosa nel mondo,
-// così l'offset iniziale è già quello giusto (niente da "correggere" dopo).
-const savedOffset = loadSavedState()
-const spawn = map.spawnObjects[0] || { x: 0, y: 0 }
-const offset = savedOffset || {
-  x: canvas.width / 2 - spawn.x * TILE_SCALE,
-  y: canvas.height / 2 - spawn.y * TILE_SCALE
+// Registro delle mappe (requisiti, sezione 2 e 4): ogni mappa è un file
+// Tiled + il tileset da usare per disegnarla. Aggiungerne una nuova è solo
+// questione di una nuova voce qui, nessuna modifica al motore sotto.
+const MAPS = {
+  piazza: {
+    data: orvietoPiazzaMap,
+    tilesetSrc: './img/tileset-v2/tileset.png'
+  },
+  rupeDungeon: {
+    data: rupeDungeonMap,
+    tilesetSrc: './img/tileset-dungeon-placeholder/tileset.png',
+    // Cella (riga, colonna) del cancello che la leva del dungeon apre.
+    gateCell: { row: 6, col: 5 }
+  }
 }
 
-const terrainLayer = new TileLayerSprite({
-  position: { x: offset.x, y: offset.y },
-  grid: map.terrenoGrid,
-  tileset: tilesetImage,
-  tileSize: map.tileSize,
-  cellSize: CELL
-})
-
-// Oggetti con margini trasparenti (alberi, ecc.): layer separato disegnato
-// sopra il terreno, così l'erba sotto ai margini vuoti resta visibile.
-const decorationLayer = new TileLayerSprite({
-  position: { x: offset.x, y: offset.y },
-  grid: map.decorazioniGrid,
-  tileset: tilesetImage,
-  tileSize: map.tileSize,
-  cellSize: CELL
-})
-
-const boundaries = []
-map.collisioniGrid.forEach((row, i) => {
-  row.forEach((gid, j) => {
-    if (gid) {
-      boundaries.push(
-        new Boundary({
-          position: { x: j * CELL + offset.x, y: i * CELL + offset.y }
-        })
-      )
-    }
-  })
-})
-
-const battleZones = []
-map.erbaAltaGrid.forEach((row, i) => {
-  row.forEach((gid, j) => {
-    if (gid) {
-      battleZones.push(
-        new Boundary({
-          position: { x: j * CELL + offset.x, y: i * CELL + offset.y }
-        })
-      )
-    }
-  })
-})
+const tilesetImageCache = {}
+function getTilesetImage(src) {
+  if (!tilesetImageCache[src]) {
+    const img = new Image()
+    img.src = src
+    tilesetImageCache[src] = img
+  }
+  return tilesetImageCache[src]
+}
 
 const villagerImg = new Image()
 villagerImg.src = './img/villager/Idle.png'
-
 const oldManImg = new Image()
 oldManImg.src = './img/oldMan/Idle.png'
 
-const npcSpriteImages = { villager: villagerImg, oldMan: oldManImg }
+const npcSpriteImages = {
+  villager: villagerImg,
+  oldMan: oldManImg,
+  zapdos: loadNpcStoryImage('zapdos'),
+  tina: loadNpcStoryImage('tina'),
+  merlo: loadNpcStoryImage('merlo'),
+  gengar: loadNpcStoryImage('gengar')
+}
+function loadNpcStoryImage(name) {
+  const img = new Image()
+  img.src = `./img/npc-story/${name}.png`
+  return img
+}
+
 const entranceMarkerImage = new Image()
 entranceMarkerImage.src = './img/markers/entrance.png'
 
@@ -89,16 +66,66 @@ function dialogueFor(dialogueKey) {
   return dialogues[dialogueKey] || ['...']
 }
 
-const characters = []
+// --- Trama "progetto Chiarore" (requisiti, sezione 5 e 14) ---
+// storyState.flags.sdengStage avanza parlando, in ordine, con Zapdos (0->1),
+// Tina (1->2), il Merlo (2->3), Gengar (3->4); risolvendo la scena di
+// Grimer nel dungeon si passa a 5; tornando da Zapdos si chiude a 6.
+function getSdengStage() {
+  return storyState.flags.sdengStage || 0
+}
+function setSdengStage(stage) {
+  storyState.flags.sdengStage = stage
+}
 
-// NPC del mondo (requisiti, sezione 8): sprite placeholder finché non
-// arrivano gli asset dedicati a Orvieto (vedi requisiti, sezione 13).
-map.npcObjects.forEach((obj) => {
+const STORY_TRIGGERS = { zapdos: 0, tina: 1, merlo: 2, gengar: 3 }
+const STORY_PLOT_DIALOGUE = {
+  zapdos: dialogues.zapdosPlot1,
+  tina: dialogues.tinaPlot,
+  merlo: dialogues.merloPlot,
+  gengar: dialogues.gengarPlot
+}
+
+function storyDialogueFor(npcKey) {
+  const stage = getSdengStage()
+
+  if (npcKey === 'zapdos' && stage === 5) {
+    return { lines: dialogues.zapdosPlot2, advanceTo: 6 }
+  }
+
+  const trigger = STORY_TRIGGERS[npcKey]
+  if (stage === trigger) {
+    return { lines: STORY_PLOT_DIALOGUE[npcKey], advanceTo: trigger + 1 }
+  }
+  if (stage > trigger) {
+    return { lines: dialogueFor(npcKey) }
+  }
+  return { lines: dialogues[npcKey] || ['...'] }
+}
+
+// --- Costruzione del mondo a partire da una mappa Tiled ---
+// Tutto ciò che dipende dalla mappa attiva (terreno, collisioni, NPC,
+// zone di transizione/battaglia) viene ricostruito qui; player/tastiera/
+// stato di battaglia restano invariati tra un cambio mappa e l'altro.
+let currentMapId
+let map
+let offset
+let terrainLayer
+let decorationLayer
+let boundaries
+let battleZones
+let characters
+let transitionZones
+let grimerZones
+let movables
+let renderables
+
+function buildCharacterFromNpcObject(obj, mapData) {
   const dialogueKey = propertyValue(obj, 'dialogueKey')
+  const storyCharacter = propertyValue(obj, 'storyCharacter')
   const spriteKey = propertyValue(obj, 'sprite')
   const position = {
-    x: obj.x * TILE_SCALE + offset.x,
-    y: obj.y * TILE_SCALE + offset.y
+    x: obj.x * (CELL / mapData.tileSize) + offset.x,
+    y: obj.y * (CELL / mapData.tileSize) + offset.y
   }
 
   const character = new Character({
@@ -107,37 +134,251 @@ map.npcObjects.forEach((obj) => {
     frames: { max: 4, hold: 20 },
     scale: 1.5,
     animate: true,
-    dialogue: dialogueFor(dialogueKey)
+    dialogue: ['...']
   })
-  character.dialogueKey = dialogueKey
-  characters.push(character)
 
-  // Come nel progetto base, un NPC blocca anche il passaggio.
-  boundaries.push(
-    new Boundary({ position: { x: position.x, y: position.y } })
-  )
-})
-
-// Punti di interazione che non sono NPC (per ora solo l'ingresso della
-// Rupe): stesso sistema di dialogo, marcatore grafico diverso.
-map.ingressiObjects.forEach((obj) => {
-  const dialogueKey = propertyValue(obj, 'dialogueKey')
-  const position = {
-    x: obj.x * TILE_SCALE + offset.x,
-    y: obj.y * TILE_SCALE + offset.y
+  if (storyCharacter) {
+    let pendingAdvance = null
+    character.getDialogue = () => {
+      const result = storyDialogueFor(storyCharacter)
+      pendingAdvance = result.advanceTo ?? null
+      return result.lines
+    }
+    character.action = () => {
+      if (pendingAdvance != null) {
+        setSdengStage(pendingAdvance)
+        pendingAdvance = null
+      }
+    }
+  } else {
+    character.dialogueKey = dialogueKey
+    character.dialogue = dialogueFor(dialogueKey)
   }
 
-  const character = new Character({
-    position,
-    image: entranceMarkerImage,
-    frames: { max: 1, hold: 1 },
-    scale: 3,
-    dialogue: dialogueFor(dialogueKey)
-  })
-  character.dialogueKey = dialogueKey
-  characters.push(character)
-})
+  return { character, position }
+}
 
+function buildWorld(mapId, spawnName, forcedOffset) {
+  const mapConfig = MAPS[mapId]
+  map = loadTiledMap(mapConfig.data)
+  const tilesetImage = getTilesetImage(mapConfig.tilesetSrc)
+  const tileScale = CELL / map.tileSize
+
+  const spawnObj =
+    map.spawnObjects.find((o) => o.name === spawnName) || map.spawnObjects[0]
+  offset = forcedOffset || {
+    x: canvas.width / 2 - spawnObj.x * tileScale,
+    y: canvas.height / 2 - spawnObj.y * tileScale
+  }
+
+  terrainLayer = new TileLayerSprite({
+    position: { x: offset.x, y: offset.y },
+    grid: map.terrenoGrid,
+    tileset: tilesetImage,
+    tileSize: map.tileSize,
+    cellSize: CELL
+  })
+  decorationLayer = new TileLayerSprite({
+    position: { x: offset.x, y: offset.y },
+    grid: map.decorazioniGrid,
+    tileset: tilesetImage,
+    tileSize: map.tileSize,
+    cellSize: CELL
+  })
+
+  boundaries = []
+  map.collisioniGrid.forEach((row, i) => {
+    row.forEach((gid, j) => {
+      if (gid) {
+        boundaries.push(
+          new Boundary({
+            position: { x: j * CELL + offset.x, y: i * CELL + offset.y }
+          })
+        )
+      }
+    })
+  })
+
+  battleZones = []
+  map.erbaAltaGrid.forEach((row, i) => {
+    row.forEach((gid, j) => {
+      if (gid) {
+        battleZones.push(
+          new Boundary({
+            position: { x: j * CELL + offset.x, y: i * CELL + offset.y }
+          })
+        )
+      }
+    })
+  })
+
+  characters = []
+  map.npcObjects.forEach((obj) => {
+    const { character, position } = buildCharacterFromNpcObject(obj, map)
+    characters.push(character)
+    // Come nel progetto base, un NPC blocca anche il passaggio.
+    boundaries.push(new Boundary({ position: { x: position.x, y: position.y } }))
+  })
+
+  map.ingressiObjects.forEach((obj) => {
+    const dialogueKey = propertyValue(obj, 'dialogueKey')
+    const position = {
+      x: obj.x * tileScale + offset.x,
+      y: obj.y * tileScale + offset.y
+    }
+    const character = new Character({
+      position,
+      image: entranceMarkerImage,
+      frames: { max: 1, hold: 1 },
+      scale: 3,
+      dialogue: dialogueFor(dialogueKey)
+    })
+    character.dialogueKey = dialogueKey
+    characters.push(character)
+  })
+
+  // Eventi di gioco (requisiti, sezione 9): leve, transizioni tra mappe,
+  // trigger di battaglie scriptate come la scena di Grimer nel dungeon.
+  transitionZones = []
+  grimerZones = []
+  map.eventiObjects.forEach((obj) => {
+    const position = {
+      x: obj.x * tileScale + offset.x,
+      y: obj.y * tileScale + offset.y
+    }
+    const size = { width: obj.width * tileScale, height: obj.height * tileScale }
+
+    if (obj.type === 'transition') {
+      transitionZones.push({
+        ...size,
+        position,
+        targetMap: propertyValue(obj, 'targetMap'),
+        targetSpawn: propertyValue(obj, 'targetSpawn')
+      })
+    } else if (obj.type === 'grimerTrigger') {
+      grimerZones.push({ ...size, position })
+    } else if (obj.type === 'lever') {
+      const dialogueKey = propertyValue(obj, 'dialogueKey')
+      const character = new Character({
+        position,
+        image: entranceMarkerImage,
+        frames: { max: 1, hold: 1 },
+        scale: 3,
+        dialogue: dialogueFor(dialogueKey)
+      })
+      character.dialogueKey = dialogueKey
+      character.action = () => openGate(mapId)
+      characters.push(character)
+    }
+  })
+
+  movables = [terrainLayer, decorationLayer, ...boundaries, ...battleZones, ...characters]
+  renderables = [
+    terrainLayer,
+    decorationLayer,
+    ...boundaries,
+    ...battleZones,
+    ...characters,
+    player
+  ]
+
+  currentMapId = mapId
+}
+
+// Apre il cancello del dungeon: cambia il tile a "pavimento" e rimuove la
+// collisione corrispondente (requisiti, sezione 9 — enigma in stile Zelda).
+function openGate(mapId) {
+  const gateCell = MAPS[mapId].gateCell
+  if (!gateCell) return
+  terrainLayer.grid[gateCell.row][gateCell.col] = 1 // gid 1 = pavimento
+  const gateX = gateCell.col * CELL + offset.x
+  const gateY = gateCell.row * CELL + offset.y
+  boundaries = boundaries.filter(
+    (b) => !(b.position.x === gateX && b.position.y === gateY)
+  )
+  movables = movables.filter(
+    (m) => !(m instanceof Boundary && m.position.x === gateX && m.position.y === gateY)
+  )
+  renderables = renderables.filter(
+    (r) => !(r instanceof Boundary && r.position.x === gateX && r.position.y === gateY)
+  )
+}
+
+function switchMap(mapId, spawnName) {
+  keys.w.pressed = false
+  keys.a.pressed = false
+  keys.s.pressed = false
+  keys.d.pressed = false
+  gsap.to('#overlappingDiv', {
+    opacity: 1,
+    duration: 0.3,
+    onComplete: () => {
+      buildWorld(mapId, spawnName)
+      gsap.to('#overlappingDiv', { opacity: 0, duration: 0.3 })
+    }
+  })
+}
+
+// Battaglia scriptata (scena di Grimer nel dungeon): sovrascrive il
+// prossimo incontro invece di pescare dal pool casuale. Letta da
+// battleScene.js in initBattle().
+let pendingScriptedMonster = null
+let inGrimerScriptedBattle = false
+
+function triggerGrimerEncounter() {
+  if (storyState.flags.grimerDone) return
+  // Come per l'incontro casuale: senza cancellare il loop del mondo, questo
+  // continuerebbe a girare in parallelo a quello di battaglia (nessun
+  // effetto visibile grazie a "if (battle.initiated) return", ma due
+  // requestAnimationFrame attivi per sempre non hanno motivo di esistere).
+  window.cancelAnimationFrame(mainAnimationId)
+  inGrimerScriptedBattle = true
+  pendingScriptedMonster = createMonsterFromDex('grimer', {
+    isEnemy: true,
+    level: 8,
+    position: { x: 800, y: 100 }
+  })
+  battle.initiated = true
+  document.querySelector('#touchControls').style.display = 'none'
+  audio.Map.stop()
+  audio.initBattle.play()
+  audio.battle.play()
+  gsap.to('#overlappingDiv', {
+    opacity: 1,
+    repeat: 3,
+    yoyo: true,
+    duration: 0.4,
+    onComplete() {
+      gsap.to('#overlappingDiv', {
+        opacity: 1,
+        duration: 0.4,
+        onComplete() {
+          initBattle()
+          animateBattle()
+          gsap.to('#overlappingDiv', { opacity: 0, duration: 0.4 })
+        }
+      })
+    }
+  })
+}
+
+// Chiamata da battleScene.js quando la battaglia scriptata con Grimer
+// finisce (cattura o svenimento): rivela il progetto Chiarore e avanza
+// la trama.
+function onGrimerBattleResolved() {
+  storyState.flags.grimerDone = true
+  setSdengStage(5)
+  player.interactionAsset = {
+    dialogue: dialogues.dungeonPostGrimer,
+    dialogueIndex: 0
+  }
+  player.isInteracting = true
+  showDialogueBox(dialogues.dungeonPostGrimer[0])
+}
+
+// Il player va creato PRIMA della prima buildWorld(): quest'ultima lo
+// include già in renderables, quindi deve esistere fin dalla prima chiamata
+// (sia all'avvio sia dopo un cambio mappa via switchMap()).
 const playerDownImage = new Image()
 playerDownImage.src = './img/sere/sereDown.png'
 
@@ -168,28 +409,17 @@ const player = new Sprite({
   }
 })
 
+// Il salvataggio va letto PRIMA di costruire il mondo, così l'offset
+// iniziale è già quello giusto (niente da "correggere" dopo).
+const savedOffset = loadSavedState()
+buildWorld('piazza', 'playerSpawn', savedOffset)
+
 const keys = {
   w: { pressed: false },
   a: { pressed: false },
   s: { pressed: false },
   d: { pressed: false }
 }
-
-const movables = [
-  terrainLayer,
-  decorationLayer,
-  ...boundaries,
-  ...battleZones,
-  ...characters
-]
-const renderables = [
-  terrainLayer,
-  decorationLayer,
-  ...boundaries,
-  ...battleZones,
-  ...characters,
-  player
-]
 
 const battle = {
   initiated: false
@@ -226,8 +456,12 @@ function playIntroIfNeeded() {
 }
 playIntroIfNeeded()
 
+// Globale (non locale ad animate()) perché va cancellato anche da fuori,
+// es. da triggerGrimerEncounter(), che avvia una battaglia scriptata senza
+// passare dal ramo "incontro casuale" qui sotto.
+let mainAnimationId
 function animate() {
-  const animationId = window.requestAnimationFrame(animate)
+  mainAnimationId = window.requestAnimationFrame(animate)
   renderables.forEach((renderable) => {
     renderable.draw()
   })
@@ -236,6 +470,27 @@ function animate() {
   player.animate = false
 
   if (battle.initiated) return
+
+  // Transizioni tra mappe (requisiti, sezione 4): sovrapporsi a una zona
+  // basta, non serve premere il tasto azione (come gli ingressi di grotte
+  // nei giochi Pokémon classici).
+  for (const zone of transitionZones) {
+    if (rectangularCollision({ rectangle1: player, rectangle2: zone })) {
+      switchMap(zone.targetMap, zone.targetSpawn)
+      return
+    }
+  }
+
+  // Scena scriptata di Grimer (requisiti, sezione 4 e 14): un solo
+  // incontro forzato, non ripetibile una volta risolto.
+  if (!storyState.flags.grimerDone) {
+    for (const zone of grimerZones) {
+      if (rectangularCollision({ rectangle1: player, rectangle2: zone })) {
+        triggerGrimerEncounter()
+        return
+      }
+    }
+  }
 
   // activate a battle
   if (keys.w.pressed || keys.a.pressed || keys.s.pressed || keys.d.pressed) {
@@ -262,7 +517,7 @@ function animate() {
         teamHasUsableMember()
       ) {
         // deactivate current animation loop
-        window.cancelAnimationFrame(animationId)
+        window.cancelAnimationFrame(mainAnimationId)
 
         audio.Map.stop()
         audio.initBattle.play()
@@ -471,6 +726,9 @@ function handleInteract() {
     if (player.interactionAsset.dialogueKey) {
       markDialogueSeen(player.interactionAsset.dialogueKey)
     }
+    if (player.interactionAsset.action) {
+      player.interactionAsset.action()
+    }
     player.interactionAsset.dialogueIndex = 0
     player.isInteracting = false
     // Senza questo reset, premere di nuovo il tasto azione senza essersi
@@ -485,7 +743,11 @@ function handleInteract() {
   if (!player.interactionAsset) return
 
   // beginning the conversation
-  showDialogueBox(player.interactionAsset.dialogue[0])
+  const dialogue = player.interactionAsset.getDialogue
+    ? player.interactionAsset.getDialogue()
+    : player.interactionAsset.dialogue
+  player.interactionAsset.dialogue = dialogue
+  showDialogueBox(dialogue[0])
   player.isInteracting = true
 }
 
