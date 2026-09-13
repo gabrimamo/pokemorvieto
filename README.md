@@ -56,6 +56,24 @@ le entità, `battleScene.js` per il combattimento, `data/` per i contenuti).
 - **Sprite provvisorio di Sere**: `img/sere/*.png`, capelli ricolorati in
   castano scuro a partire dal placeholder del progetto base
   (`scripts/recolorSereSprite.py`).
+- **Dungeon della Rupe + trama "progetto Chiarore"** (requisiti, sezione 4,
+  5 e 14): una seconda mappa (`data/maps/rupeDungeon.json`), raggiungibile
+  da un ingresso nella piazza, con un piccolo enigma in stile Zelda (una
+  leva apre un cancello che blocca il passaggio) e la scena scriptata
+  dell'incontro con Grimer di notte, che rivela la vera natura del
+  progetto. Quattro NPC nella piazza (Zapdos, Tina, il Merlo, Gengar)
+  raccontano la trama in sequenza (`storyState.flags.sdengStage` in
+  `index.js`), con dialoghi diversi a seconda di quanto si è già scoperto.
+  Sistema generico riusabile per aggiungere altre mappe/eventi:
+  - `MAPS` in `index.js`: registro di mappe, ognuna con la propria mappa
+    Tiled e il proprio tileset; `buildWorld(mapId, spawnName)` ricostruisce
+    tutto ciò che dipende dalla mappa attiva.
+  - Layer `eventi` (oggetti generici distinti per `type`: `transition`,
+    `lever`, `grimerTrigger`) in `js/tiledMap.js`, per leve/cambi
+    mappa/trigger di battaglie scriptate senza dover inventare un nuovo
+    layer per ogni funzionalità.
+  - `pendingScriptedMonster` in `battleScene.js`: sovrascrive l'incontro
+    casuale con un Pokémon preimpostato, per le battaglie di trama.
 
 ## Asset disponibili ma non ancora usati
 
@@ -66,8 +84,10 @@ Il pacchetto caricato include anche altro materiale, organizzato in
   d'acqua) — utilizzabili per arricchire `Monster.attack()` in `classes.js`
 - `img/ui/` (15): icone per barra HP (`baricon*`) e pulsanti di menu
   (`options*`)
-- `img/characters-pack/` (10 interi): altri personaggi overworld completi
-  a 4 direzioni, oltre ai due già usati per gli NPC generici
+- `img/characters-pack/` (10 interi, 6 già usati): personaggi overworld
+  completi a 4 direzioni — 2 come NPC generici (villager/anziano), 4 come
+  personaggi di trama (Zapdos, Tina, il Merlo, Gengar); ne restano 4 liberi
+  per eventuali altri NPC
 - `img/monsters-pack/` (16 mostri con forma base+evoluzione, animazioni
   idle/attacco, icone menu): creature **originali**, non i Pokémon veri —
   di proposito non usate in battaglia per mantenere il legame con la
@@ -77,17 +97,30 @@ Il pacchetto caricato include anche altro materiale, organizzato in
 ## Cosa manca ancora (non bloccante per una prima versione)
 
 La mappa `data/maps/orvietoPiazza.json` è funzionale e usa asset veri, ma
-resta una piazza piccola e semplice: aggiungere più edifici/vicoli/aree
-(es. sotterranea per la Rupe) è solo questione di tempo di composizione in
-Tiled con lo stesso tileset, non di asset mancanti.
+resta una piazza piccola e semplice: aggiungere più edifici/vicoli/aree è
+solo questione di tempo di composizione in Tiled con lo stesso tileset, non
+di asset mancanti.
+
+Il dungeon della Rupe (`data/maps/rupeDungeon.json`) usa invece un tileset
+**segnaposto** generato a tinte piatte (`img/tileset-dungeon-placeholder/`):
+il pacchetto di asset attuale non contiene tile da grotta/sotterraneo,
+quindi la struttura (stanze, enigma della leva, scena di Grimer) è già
+completa e funzionante, ma visivamente andrà sostituita con un vero
+tileset da grotta/tufo quando disponibile — nessuna modifica al motore
+richiesta, basta cambiare `tilesetSrc` in `MAPS.rupeDungeon` in `index.js`.
 
 Lo sprite di Sere resta una ricolorazione provvisoria del placeholder
-base, non un vero artwork dedicato. I personaggi della storia (Tina, il
-Merlo, Zapdos, Gengar, il padre "Kraken") non hanno ancora uno sprite
-proprio e quindi non compaiono nel mondo, anche se i loro dialoghi sono già
-pronti in `data/dialogues/dialogues.js` — i 10 personaggi in
-`img/characters-pack/` sono candidati papabili se nessuno ha già un design
-più specifico in mente.
+base, non un vero artwork dedicato. I personaggi della storia con un ruolo
+nella trama (Zapdos, Tina, il Merlo, Gengar) usano ora sprite presi dal
+pacchetto overworld (`img/npc-story/`, riga "verso il basso" essendo NPC
+fermi); il padre "Kraken" non ha ancora uno sprite proprio e quindi non
+compare nel mondo, anche se il suo dialogo è già pronto in
+`data/dialogues/dialogues.js`.
+
+Il finale vero e proprio della storia — l'incontro con Mew, accennato in
+`dialogues.sereClosure` — non è ancora implementato: la trama del progetto
+Chiarore si chiude per ora con la rivelazione su Grimer e il confronto
+finale con Zapdos (`storyState.flags.sdengStage` arriva a 6).
 
 Gli sprite dei Pokémon in battaglia sono caricati da un URL pubblico
 (sprite classici di PokéAPI) invece che da file locali: funziona bene per un
@@ -97,8 +130,8 @@ quando si gioca. Per un gioco realmente offline, rilanciare
 `img/pokemon/` e aggiornare `pokemonSpriteUrl()` in
 `data/pokemonSprites.js` perché punti lì.
 
-Altri punti aperti elencati nei requisiti (missioni/eventi della trama
-Sdeng, scena dei Grimer notturni, bilanciamento della cattura/livelli): vedi
+Altri punti aperti elencati nei requisiti (bilanciamento della
+cattura/livelli, resto della mappa di Orvieto oltre la piazza): vedi
 `docs/REQUISITI.md`, sezione 14.
 
 ## Sviluppo locale
